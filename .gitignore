@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+*wallet*.json
+.agent-wallet.json
+keystore*.json
+*.key
+*.log
