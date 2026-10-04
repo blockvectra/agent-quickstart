@@ -4,7 +4,7 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import type { Hex } from "viem";
 
 const CONSOLE_API = "https://console-api.blockvectra.com/v1";
-const GATEWAY_API = "https://api.blockvectra.com/v1";
+const API_BASE = "https://api.blockvectra.com/v1";
 const WALLET_FILE = path.resolve(".agent-wallet.json");
 
 function mask(value: string): string {
@@ -113,7 +113,7 @@ async function main() {
 
   // 4. Fetch chain list & call JSON-RPC
   console.log("\n[4/5] Reading chain directory from GET /v1/chains...");
-  const chainsRes = await fetch(`${GATEWAY_API}/chains`);
+  const chainsRes = await fetch(`${API_BASE}/chains`);
   if (!chainsRes.ok) throw new Error(`Fetch chains failed: ${chainsRes.status}`);
   const { chains } = (await chainsRes.json()) as {
     chains: Array<{ chain: string; name: string; chain_id: number }>;
@@ -125,7 +125,7 @@ async function main() {
   console.log("      Calling eth_blockNumber via JSON-RPC...");
   let blockNumberHex: string | undefined;
   for (let attempt = 1; attempt <= 5; attempt++) {
-    const rpcRes = await fetch(`${GATEWAY_API}/${rhChain.chain}`, {
+    const rpcRes = await fetch(`${API_BASE}/${rhChain.chain}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": apiKey },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_blockNumber", params: [] }),
@@ -149,7 +149,7 @@ async function main() {
 
   // 5. Query Data API read-only endpoint
   console.log("\n[5/5] Querying Data API GET /{chain}/status/freshness...");
-  const dataRes = await fetch(`${GATEWAY_API}/data/${rhChain.chain}/status/freshness`, {
+  const dataRes = await fetch(`${API_BASE}/data/${rhChain.chain}/status/freshness`, {
     headers: { "x-api-key": apiKey },
   });
   if (!dataRes.ok) throw new Error(`Data API failed: ${dataRes.status} ${await dataRes.text()}`);
