@@ -225,11 +225,11 @@ claude mcp add --transport http -H "x-api-key: $BLOCKVECTRA_API_KEY" blockvectra
 
 ## 相关资源
 
-- [程序化开户指南](https://docs.blockvectra.com/zh/guides/programmatic-signup/)
-- [AI Agent 接入指南](https://docs.blockvectra.com/zh/guides/ai-agents/)
-- [套餐与价格方案](https://blockvectra.com/zh/pricing/)
-- [Data API OpenAPI 接口规范](https://docs.blockvectra.com/openapi/data.yaml)
-- [JSON-RPC OpenAPI 接口规范](https://docs.blockvectra.com/openapi/json-rpc.yaml)
+- [程序化开户指南](https://docs.blockvectra.com/zh/guides/programmatic-signup/?ref=gh-agent-quickstart)
+- [AI Agent 接入指南](https://docs.blockvectra.com/zh/guides/ai-agents/?ref=gh-agent-quickstart)
+- [套餐与价格方案](https://blockvectra.com/zh/pricing/?ref=gh-agent-quickstart)
+- [Data API OpenAPI 接口规范](https://docs.blockvectra.com/openapi/data.yaml?ref=gh-agent-quickstart)
+- [JSON-RPC OpenAPI 接口规范](https://docs.blockvectra.com/openapi/json-rpc.yaml?ref=gh-agent-quickstart)
 
 ---
 

@@ -225,11 +225,11 @@ If an agent loses its API key or session token, it can regain access using the s
 
 ## Related Documentation
 
-- [Programmatic Sign-up Guide](https://docs.blockvectra.com/en/guides/programmatic-signup/)
-- [AI Agent Integration Guide](https://docs.blockvectra.com/en/guides/ai-agents/)
-- [Plans and Pricing](https://blockvectra.com/en/pricing/)
-- [Data API OpenAPI Specification](https://docs.blockvectra.com/openapi/data.yaml)
-- [JSON-RPC OpenAPI Specification](https://docs.blockvectra.com/openapi/json-rpc.yaml)
+- [Programmatic Sign-up Guide](https://docs.blockvectra.com/en/guides/programmatic-signup/?ref=gh-agent-quickstart)
+- [AI Agent Integration Guide](https://docs.blockvectra.com/en/guides/ai-agents/?ref=gh-agent-quickstart)
+- [Plans and Pricing](https://blockvectra.com/en/pricing/?ref=gh-agent-quickstart)
+- [Data API OpenAPI Specification](https://docs.blockvectra.com/openapi/data.yaml?ref=gh-agent-quickstart)
+- [JSON-RPC OpenAPI Specification](https://docs.blockvectra.com/openapi/json-rpc.yaml?ref=gh-agent-quickstart)
 
 ---
 
