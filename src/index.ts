@@ -78,7 +78,8 @@ async function main() {
     const loginRes = await fetch(`${CONSOLE_API}/auth/siwe/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, signature }),
+      // `ref` is an optional sign-up attribution field (saved only when a new account is created).
+      body: JSON.stringify({ message, signature, ref: "gh-agent-quickstart" }),
     });
     if (!loginRes.ok) throw new Error(`Login request failed: ${loginRes.status} ${await loginRes.text()}`);
     const loginData = (await loginRes.json()) as {
