@@ -6,7 +6,8 @@
   "license": "MIT",
   "scripts": {
     "start": "tsx src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/wallet.test.ts"
   },
   "dependencies": {
     "viem": "^2.23.5",

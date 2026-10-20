@@ -1,7 +1,5 @@
-import fs from "node:fs";
 import path from "node:path";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import type { Hex } from "viem";
+import { loadOrCreateWallet } from "./wallet.js";
 
 const CONSOLE_API = "https://console-api.blockvectra.com/v1";
 const API_BASE = "https://api.blockvectra.com/v1";
@@ -24,41 +22,20 @@ async function main() {
     console.log("[1-3/5] Found BLOCKVECTRA_API_KEY in environment, skipping wallet & key provisioning.\n");
     console.log(`      API Key: ${mask(apiKey)}`);
   } else {
-    let privateKey = process.env.AGENT_PRIVATE_KEY as Hex | undefined;
+    const { account, source } = loadOrCreateWallet({
+      walletFile: WALLET_FILE,
+      privateKey: process.env.AGENT_PRIVATE_KEY,
+    });
 
-    if (privateKey) {
+    if (source === "environment") {
       console.log("[1/5] Loaded agent wallet from AGENT_PRIVATE_KEY.\n");
-    } else if (fs.existsSync(WALLET_FILE)) {
-      try {
-        const walletData = JSON.parse(fs.readFileSync(WALLET_FILE, "utf-8"));
-        const savedKey = (walletData.private_key || walletData.privateKey) as Hex | undefined;
-        if (savedKey && typeof savedKey === "string" && savedKey.startsWith("0x")) {
-          privateKey = savedKey;
-          console.log("[1/5] Loaded agent wallet from .agent-wallet.json.\n");
-        }
-      } catch {
-        // Fall through to generate new key if reading fails
-      }
-    }
-
-    if (!privateKey) {
-      privateKey = generatePrivateKey();
-      const tempAccount = privateKeyToAccount(privateKey);
-      fs.writeFileSync(
-        WALLET_FILE,
-        JSON.stringify({ address: tempAccount.address, private_key: privateKey }, null, 2) + "\n",
-        { mode: 0o600 }
-      );
-      try {
-        fs.chmodSync(WALLET_FILE, 0o600);
-      } catch {
-        // Best-effort chmod if filesystem does not support POSIX permissions
-      }
+    } else if (source === "saved") {
+      console.log("[1/5] Loaded agent wallet from .agent-wallet.json.\n");
+    } else {
       console.log("[1/5] Generated agent wallet and saved to .agent-wallet.json (0600).");
       console.log("      Tip: Set AGENT_PRIVATE_KEY in your environment to override.\n");
     }
 
-    const account = privateKeyToAccount(privateKey);
     console.log(`      Wallet Address: ${account.address}`);
 
     // 2. Programmatic SIWE sign-in / signup (omit Origin header)
