@@ -73,13 +73,9 @@ This example covers:
    npm install
    ```
 
-3. (Optional) Configure an existing wallet:
+3. (Optional) Configure an existing wallet by injecting `AGENT_PRIVATE_KEY` into the process environment through your runtime's secret manager. `.env.example` documents its format; `npm start` does **not** load a `.env` file automatically.
 
-   ```bash
-   cp .env.example .env
-   ```
-
-   Edit `.env` to supply `AGENT_PRIVATE_KEY=0x...`. If omitted, the script checks for an existing `.agent-wallet.json`. If not found, a new wallet is generated and saved to `.agent-wallet.json` (permission `0600`) for reuse across runs. The private key is never printed to the console.
+   Without this override, the script reuses `.agent-wallet.json`. It creates a wallet only when that file is absent, using an exclusive write and permission `0600` on POSIX filesystems. An unreadable, damaged or inconsistent wallet stops execution before sign-in and is never overwritten. Preserve the file and restore a trusted backup before retrying; deleting it creates a different identity on the next run. The private key is never printed to the console.
 
 ---
 
