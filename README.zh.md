@@ -6,7 +6,7 @@
 1. **钱包身份**：从环境变量 `AGENT_PRIVATE_KEY` 或本地 `.agent-wallet.json` 文件读取以太坊 EOA 私钥；若均未配置，则在本地生成新钱包并保存至 `.agent-wallet.json`（权限 `0600`），以便后续运行复用相同身份，避免重复开户。
 2. **程序化开户与登录**：通过以太坊签名（SIWE / EIP-191）调用 `https://console-api.blockvectra.com/v1` 进行鉴权（程序化模式，不带 `Origin` 请求头）。新钱包首次登录自动完成开户。
 3. **API Key 创建**：使用登录获得的会话令牌（`rgs_...`）调用控制台接口生成 API Key（`rgw_...`）。
-4. **JSON-RPC 调用**：从 `GET https://api.blockvectra.com/v1/chains` 获取当前链目录及策略，使用 API Key 调用 Robinhood Chain（`robinhood_mainnet`）的 `eth_blockNumber` 接口。
+4. **JSON-RPC 调用**：从 `GET https://api.blockvectra.com/v1/chains` 获取当前链目录及策略，精确选择唯一且数字链 ID 为 `4663` 的 `robinhood_mainnet`，先验证该端点的 `eth_chainId`，再使用 API Key 调用 `eth_blockNumber`。
 5. **Data API 查询**：根据 OpenAPI 规范调用只读的数据新鲜度接口（`GET /v1/data/{chain}/status/freshness`）。
 
 ---
@@ -93,9 +93,11 @@ npx tsx src/index.ts
 npm start
 ```
 
-区块号验证要求 HTTP 成功、匹配请求的 JSON-RPC 响应及合法的以太坊区块数量。异常响应会在 Data API 步骤前停止；有效且明确标记可重试的错误最多尝试 5 次。格式见 [JSON-RPC 响应规范](https://www.jsonrpc.org/specification#response_object)和[以太坊数量规范](https://eips.ethereum.org/EIPS/eip-1474#quantity)。
+区块号验证要求 HTTP 成功、匹配请求的 JSON-RPC 响应及合法的以太坊区块数量。异常响应会在 Data API 步骤前停止；有效且明确标记可重试的错误每个 RPC 方法最多尝试 5 次（链 ID 与区块号两步合计最多 10 次）。格式见 [JSON-RPC 响应规范](https://www.jsonrpc.org/specification#response_object)和[以太坊数量规范](https://eips.ethereum.org/EIPS/eip-1474#quantity)。
 
 整请求拒绝返回的 `id: null` 错误可在明确标记可重试时重试；成功响应仍必须匹配请求 ID `1`。
+
+此主网示例不通过相似显示名称选链，也不回退到测试网。主网目录条目缺失、重复或链 ID 不符时，在 RPC 前停止；`eth_chainId` 的有效结果必须等于 `4663`，才继续读区块号及 Data API 新鲜度。成功运行因此增加一次只读 RPC；链验证失败时，之前的钱包、账户或 API Key 创建可能已经完成。
 
 运行 `npm test` 和 `npm run typecheck` 可做离线回归检查；测试替换网络调用，不会创建账户。
 
@@ -103,7 +105,7 @@ npm start
 
 ## 运行结果示例
 
-以下为实际运行生成的标准输出：
+以下为输出示例（地址、Key、区块高度及数据集数量会变化；本次修订仅做离线验证）：
 
 ```text
 === BlockVectra AI Agent Quickstart ===
@@ -125,6 +127,8 @@ npm start
 
 [4/5] Reading chain directory from GET /v1/chains...
       Selected: Robinhood Chain (robinhood_mainnet, Chain ID 4663)
+      Verifying eth_chainId via JSON-RPC...
+      Verified Chain ID: 4663
       Calling eth_blockNumber via JSON-RPC...
       Latest Block: 77213136 (0x49a2dd0)
 
