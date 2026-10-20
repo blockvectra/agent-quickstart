@@ -101,6 +101,8 @@ npm start
 
 运行 `npm test` 和 `npm run typecheck` 可做离线回归检查；测试替换网络调用，不会创建账户。
 
+PR 和 `main` 更新会通过 [Offline checks](.github/workflows/offline-checks.yml) 在 Node.js `24.21.0` 上自动执行这两项检查，依赖按锁文件使用 `npm ci --ignore-scripts` 安装。
+
 ---
 
 ## 运行结果示例
