@@ -105,6 +105,29 @@ Pull requests and pushes to `main` run these checks on Node.js `24.21.0` through
 
 ---
 
+## Optional: Read Wallet Balances (library, not run by `npm start`)
+
+`src/wallet-balances.ts` is an opt-in, read-only helper for `GET /v1/data/{chain}/addresses/{address}/balances`. `collectBalancePages(readPage, expectedChain, maxPages = 20)` follows `next_cursor` until it is omitted and rejects on malformed envelopes, chain mismatch, HTTP/read failures, repeated cursors, the page cap, duplicate tokens, or a changed known `meta.refreshed_at`. Balances stay exact decimal-integer strings; `symbol`/`decimals` stay `null` when unknown (`decimals: 0` is a real value). `readPage` must reject HTTP errors before returning JSON. Run it server-side only; the API key must not reach browsers or logs.
+
+```ts
+import { collectBalancePages } from "./src/wallet-balances.js";
+
+const chain = "robinhood_mainnet"; // check chain capability/coverage first
+const address = "0x..."; // wallet to read
+
+const result = await collectBalancePages(async (cursor) => {
+  const url = new URL(`https://api.blockvectra.com/v1/data/${chain}/addresses/${address}/balances`);
+  if (cursor !== undefined) url.searchParams.set("cursor", cursor); // opaque, unchanged
+  const res = await fetch(url, { headers: { "x-api-key": process.env.BLOCKVECTRA_API_KEY! } });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}, chain);
+```
+
+Before real use, confirm the selected chain's capability and coverage for this endpoint; this repository makes no claim that Robinhood balances are currently available and has not run this against a live API. Balances come from a snapshot refreshed every 6 hours (plus up to 30 minutes of delay and the refresh run), so rows may be stale. `meta.as_of_block` is the indexed head, not the snapshot height; read `meta.refreshed_at` (`null` means unknown, treat as stale). Pages are not a transactionally consistent portfolio; `pages` keeps each page's original `meta`. The aggregate `refreshedAt` is the shared known time only when every page reported the same one; if any page has `refreshed_at: null` it is `null` (unknown), regardless of page order, and differing known times are still rejected even with a `null` page between them.
+
+---
+
 ## Example Output
 
 Illustrative output (addresses, keys, block heights and dataset counts vary; this revision was validated offline):
