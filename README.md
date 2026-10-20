@@ -101,6 +101,8 @@ This mainnet example does not select a network by display-name similarity or fal
 
 Run `npm test` and `npm run typecheck` for offline regression checks. Tests replace network calls and do not provision accounts.
 
+Pull requests and pushes to `main` run these checks on Node.js `24.21.0` through [Offline checks](.github/workflows/offline-checks.yml), after installing the lockfile dependencies with `npm ci --ignore-scripts`.
+
 ---
 
 ## Example Output
