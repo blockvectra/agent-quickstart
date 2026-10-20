@@ -12,6 +12,11 @@ const retry = {
   jsonrpc: "2.0", id: 1,
   error: { code: -32021, message: "synthetic retryable error", data: { retryable: true } },
 };
+const admissionRetry = {
+  jsonrpc: "2.0", id: null,
+  error: { code: -32021, message: "authentication data temporarily unavailable",
+    data: { reason: "auth_unavailable", retryable: true } },
+};
 
 type Reply = { status: number; body?: unknown; invalidJson?: boolean };
 
@@ -81,6 +86,12 @@ const rejected: Array<{ name: string; reply: Reply }> = [
   { name: "missing ID", reply: { status: 200, body: { jsonrpc: "2.0", result: "0x10" } } },
   { name: "string ID", reply: { status: 200, body: { ...success, id: "1" } } },
   { name: "boolean ID", reply: { status: 200, body: { ...success, id: true } } },
+  { name: "null ID success", reply: { status: 200, body: { ...success, id: null } } },
+  { name: "null ID nonretryable error", reply: { status: 401, body: {
+    ...admissionRetry, error: { ...admissionRetry.error, data: { retryable: false } },
+  } } },
+  { name: "null ID wrong version", reply: { status: 503, body: { ...admissionRetry, jsonrpc: "1.0" } } },
+  { name: "null ID error and result", reply: { status: 200, body: { ...admissionRetry, result: "0x10" } } },
   { name: "wrong version", reply: { status: 200, body: { ...success, jsonrpc: "1.0" } } },
   { name: "nonhex result", reply: { status: 200, body: { ...success, result: "not-a-block-number" } } },
   { name: "leading zero", reply: { status: 200, body: { ...success, result: "0x00" } } },
@@ -126,6 +137,24 @@ test("a valid retryable error may recover, preserving the bounded retry behavior
 
 test("five retryable errors fail without a sixth call, final delay, or Data API call", (t) => {
   const { child, trace } = runEntry(t, [{ status: 503, body: retry }]);
+  assert.equal(child.status, 1);
+  assert.doesNotMatch(child.stdout, /Quickstart Completed Successfully|Latest Block:/);
+  assert.deepEqual(trace, { rpc: 5, data: 0, delays: 4, unexpected: 0 });
+});
+
+test("a null-ID whole-request refusal can recover without counting as RPC success", (t) => {
+  const { child, trace } = runEntry(t, [{ status: 503, body: admissionRetry }, { status: 200, body: success }]);
+  assert.equal(child.status, 0);
+  assert.match(child.stdout, /Quickstart Completed Successfully/);
+  assert.equal((child.stdout.match(/Latest Block:/g) ?? []).length, 1);
+  assert.deepEqual(trace, { rpc: 2, data: 1, delays: 1, unexpected: 0 });
+});
+
+test("null-ID whole-request refusals retain the five-attempt limit", (t) => {
+  const { child, trace } = runEntry(t, [{ status: 503, body: {
+    ...admissionRetry, error: { ...admissionRetry.error,
+      message: "billing data temporarily unavailable", data: { reason: "billing_unavailable", retryable: true } },
+  } }]);
   assert.equal(child.status, 1);
   assert.doesNotMatch(child.stdout, /Quickstart Completed Successfully|Latest Block:/);
   assert.deepEqual(trace, { rpc: 5, data: 0, delays: 4, unexpected: 0 });

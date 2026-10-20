@@ -95,6 +95,8 @@ npm start
 
 区块号验证要求 HTTP 成功、匹配请求的 JSON-RPC 响应及合法的以太坊区块数量。异常响应会在 Data API 步骤前停止；有效且明确标记可重试的错误最多尝试 5 次。格式见 [JSON-RPC 响应规范](https://www.jsonrpc.org/specification#response_object)和[以太坊数量规范](https://eips.ethereum.org/EIPS/eip-1474#quantity)。
 
+整请求拒绝返回的 `id: null` 错误可在明确标记可重试时重试；成功响应仍必须匹配请求 ID `1`。
+
 运行 `npm test` 和 `npm run typecheck` 可做离线回归检查；测试替换网络调用，不会创建账户。
 
 ---
