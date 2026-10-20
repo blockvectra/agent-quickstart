@@ -105,6 +105,29 @@ PR 和 `main` 更新会通过 [Offline checks](.github/workflows/offline-checks.
 
 ---
 
+## 可选：读取钱包余额（库函数，`npm start` 不会运行）
+
+`src/wallet-balances.ts` 是按需引入的只读辅助模块，对应 `GET /v1/data/{chain}/addresses/{address}/balances`。`collectBalancePages(readPage, expectedChain, maxPages = 20)` 会沿 `next_cursor` 翻页直到该字段缺省；遇到响应结构错误、链不匹配、HTTP/读取失败、游标重复、超过页数上限、跨页重复 token，或已知的 `meta.refreshed_at` 在页间变化时整体拒绝。余额保持精确的十进制整数字符串；未知的 `symbol`/`decimals` 保持 `null`（`decimals: 0` 是有效的真实值）。`readPage` 必须在返回 JSON 之前拒绝 HTTP 错误。只能在服务端运行，API Key 不得出现在浏览器或日志中。
+
+```ts
+import { collectBalancePages } from "./src/wallet-balances.js";
+
+const chain = "robinhood_mainnet"; // 先确认该链的能力/覆盖范围
+const address = "0x..."; // 要读取的钱包地址
+
+const result = await collectBalancePages(async (cursor) => {
+  const url = new URL(`https://api.blockvectra.com/v1/data/${chain}/addresses/${address}/balances`);
+  if (cursor !== undefined) url.searchParams.set("cursor", cursor); // 不透明游标，原样传回
+  const res = await fetch(url, { headers: { "x-api-key": process.env.BLOCKVECTRA_API_KEY! } });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}, chain);
+```
+
+实际使用前须确认所选链在该端点上的能力与覆盖范围；本仓库不声明 Robinhood 余额当前可用，也未对线上 API 运行过此模块。余额来自每 6 小时刷新一次的快照（另有最多 30 分钟随机延迟及刷新耗时），数据可能过期。`meta.as_of_block` 是索引头部高度，不是快照高度；请读取 `meta.refreshed_at`（`null` 表示未知，按过期处理）。分页结果不是事务一致的资产组合；`pages` 保留每页原始 `meta`。
+
+---
+
 ## 运行结果示例
 
 以下为输出示例（地址、Key、区块高度及数据集数量会变化；本次修订仅做离线验证）：
