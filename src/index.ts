@@ -1,6 +1,7 @@
 import path from "node:path";
 import { loadOrCreateWallet } from "./wallet.js";
-import { classifyBlockNumberResponse } from "./rpc-response.js";
+import { classifyQuantityResponse } from "./rpc-response.js";
+import { ROBINHOOD_MAINNET_ID, selectRobinhoodMainnet } from "./chain-directory.js";
 
 const CONSOLE_API = "https://console-api.blockvectra.com/v1";
 const API_BASE = "https://api.blockvectra.com/v1";
@@ -11,6 +12,31 @@ function mask(value: string): string {
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function readRpcQuantity(chain: string, apiKey: string, method: "eth_chainId" | "eth_blockNumber") {
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    const rpcRes = await fetch(`${API_BASE}/${chain}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": apiKey },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params: [] }),
+    });
+    let rpcJson: unknown;
+    try {
+      rpcJson = await rpcRes.json();
+    } catch {
+      throw new Error(`RPC response was not valid JSON (HTTP ${rpcRes.status})`);
+    }
+    const response = classifyQuantityResponse(rpcRes.ok, rpcJson);
+    if (response.kind === "success") return response.quantity;
+    if (response.kind === "retryable-error" && attempt < 5) {
+      console.log(`      Retrying ${method} verification (attempt ${attempt}/5)...`);
+      await sleep(2000);
+      continue;
+    }
+    throw new Error(`RPC verification failed for ${method} (HTTP ${rpcRes.status}): invalid response or rejected call`);
+  }
+  throw new Error(`RPC verification failed for ${method}`);
+}
 
 async function main() {
   console.log("=== BlockVectra AI Agent Quickstart ===\n");
@@ -93,40 +119,18 @@ async function main() {
   console.log("\n[4/5] Reading chain directory from GET /v1/chains...");
   const chainsRes = await fetch(`${API_BASE}/chains`);
   if (!chainsRes.ok) throw new Error(`Fetch chains failed: ${chainsRes.status}`);
-  const { chains } = (await chainsRes.json()) as {
-    chains: Array<{ chain: string; name: string; chain_id: number }>;
-  };
-  const rhChain = chains.find((c) => c.chain === "robinhood_mainnet" || c.name.includes("Robinhood"));
-  if (!rhChain) throw new Error("Robinhood Chain not found in /v1/chains");
+  const rhChain = selectRobinhoodMainnet(await chainsRes.json());
   console.log(`      Selected: ${rhChain.name} (${rhChain.chain}, Chain ID ${rhChain.chain_id})`);
 
-  console.log("      Calling eth_blockNumber via JSON-RPC...");
-  let blockNumberHex: string | undefined;
-  for (let attempt = 1; attempt <= 5; attempt++) {
-    const rpcRes = await fetch(`${API_BASE}/${rhChain.chain}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-api-key": apiKey },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_blockNumber", params: [] }),
-    });
-    let rpcJson: unknown;
-    try {
-      rpcJson = await rpcRes.json();
-    } catch {
-      throw new Error(`RPC response was not valid JSON (HTTP ${rpcRes.status})`);
-    }
-    const response = classifyBlockNumberResponse(rpcRes.ok, rpcJson);
-    if (response.kind === "success") {
-      blockNumberHex = response.blockNumber;
-      break;
-    }
-    if (response.kind === "retryable-error" && attempt < 5) {
-      console.log(`      Retrying RPC verification (attempt ${attempt}/5)...`);
-      await sleep(2000);
-      continue;
-    }
-    throw new Error(`RPC verification failed (HTTP ${rpcRes.status}): invalid response or rejected call`);
+  console.log("      Verifying eth_chainId via JSON-RPC...");
+  const chainIdHex = await readRpcQuantity(rhChain.chain, apiKey, "eth_chainId");
+  if (BigInt(chainIdHex) !== BigInt(ROBINHOOD_MAINNET_ID)) {
+    throw new Error("RPC chain ID does not match Robinhood mainnet (4663)");
   }
-  console.log(`      Latest Block: ${BigInt(blockNumberHex!).toString(10)} (${blockNumberHex})`);
+  console.log(`      Verified Chain ID: ${ROBINHOOD_MAINNET_ID}`);
+  console.log("      Calling eth_blockNumber via JSON-RPC...");
+  const blockNumberHex = await readRpcQuantity(rhChain.chain, apiKey, "eth_blockNumber");
+  console.log(`      Latest Block: ${BigInt(blockNumberHex).toString(10)} (${blockNumberHex})`);
 
   // 5. Query Data API read-only endpoint
   console.log("\n[5/5] Querying Data API GET /{chain}/status/freshness...");

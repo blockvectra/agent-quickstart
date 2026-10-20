@@ -6,7 +6,7 @@ This example covers:
 1. **Wallet identity**: Reads an Ethereum EOA private key from `AGENT_PRIVATE_KEY` or from a local `.agent-wallet.json` file. If neither is configured, generates a new wallet locally and saves it to `.agent-wallet.json` (permission `0600`) so subsequent runs reuse the same identity instead of creating new accounts.
 2. **Programmatic account sign-up**: Authenticates via Sign-In with Ethereum (SIWE / EIP-191) against `https://console-api.blockvectra.com/v1` in programmatic mode (omitting the `Origin` header). First-time wallet sign-in automatically provisions an account.
 3. **API key provisioning**: Creates an API key (`rgw_...`) using the authenticated session token (`rgs_...`).
-4. **JSON-RPC execution**: Reads the active chain directory from `GET https://api.blockvectra.com/v1/chains` and executes `eth_blockNumber` on Robinhood Chain (`robinhood_mainnet`) using the API key.
+4. **JSON-RPC execution**: Reads the active chain directory from `GET https://api.blockvectra.com/v1/chains`, selects the unique `robinhood_mainnet` entry with numeric chain ID `4663`, verifies `eth_chainId` on that endpoint, then executes `eth_blockNumber` using the API key.
 5. **Data API query**: Calls the read-only dataset freshness endpoint (`GET /v1/data/{chain}/status/freshness`) defined in the OpenAPI specification.
 
 ---
@@ -93,9 +93,11 @@ Or run via npm script:
 npm start
 ```
 
-The block-number check requires HTTP success, a matching JSON-RPC response and a valid Ethereum block quantity. Rejected responses stop before the Data API step; valid explicitly retryable errors have at most five attempts. See [JSON-RPC responses](https://www.jsonrpc.org/specification#response_object) and [Ethereum quantities](https://eips.ethereum.org/EIPS/eip-1474#quantity).
+The block-number check requires HTTP success, a matching JSON-RPC response and a valid Ethereum block quantity. Rejected responses stop before the Data API step; valid explicitly retryable errors have at most five attempts per RPC method (up to ten across chain-ID and block-number verification). See [JSON-RPC responses](https://www.jsonrpc.org/specification#response_object) and [Ethereum quantities](https://eips.ethereum.org/EIPS/eip-1474#quantity).
 
 Whole-request errors with `id: null` may be retried when explicitly marked retryable; a successful response must still match request ID `1`.
+
+This mainnet example does not select a network by display-name similarity or fall back to testnet. Missing, duplicate or inconsistent mainnet directory entries stop before RPC. A valid `eth_chainId` result must equal `4663` before the script requests a block number or Data API freshness. This adds one read-only RPC call on a successful run; chain verification may fail after wallet/account/key provisioning has already occurred.
 
 Run `npm test` and `npm run typecheck` for offline regression checks. Tests replace network calls and do not provision accounts.
 
@@ -103,7 +105,7 @@ Run `npm test` and `npm run typecheck` for offline regression checks. Tests repl
 
 ## Example Output
 
-Below is actual execution output from a live test run:
+Illustrative output (addresses, keys, block heights and dataset counts vary; this revision was validated offline):
 
 ```text
 === BlockVectra AI Agent Quickstart ===
@@ -125,6 +127,8 @@ Below is actual execution output from a live test run:
 
 [4/5] Reading chain directory from GET /v1/chains...
       Selected: Robinhood Chain (robinhood_mainnet, Chain ID 4663)
+      Verifying eth_chainId via JSON-RPC...
+      Verified Chain ID: 4663
       Calling eth_blockNumber via JSON-RPC...
       Latest Block: 77213136 (0x49a2dd0)
 
