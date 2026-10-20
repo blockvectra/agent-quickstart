@@ -93,6 +93,10 @@ Or run via npm script:
 npm start
 ```
 
+The block-number check requires HTTP success, a matching JSON-RPC response and a valid Ethereum block quantity. Rejected responses stop before the Data API step; valid explicitly retryable errors have at most five attempts. See [JSON-RPC responses](https://www.jsonrpc.org/specification#response_object) and [Ethereum quantities](https://eips.ethereum.org/EIPS/eip-1474#quantity).
+
+Run `npm test` and `npm run typecheck` for offline regression checks. Tests replace network calls and do not provision accounts.
+
 ---
 
 ## Example Output

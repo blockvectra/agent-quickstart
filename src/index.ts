@@ -1,5 +1,6 @@
 import path from "node:path";
 import { loadOrCreateWallet } from "./wallet.js";
+import { classifyBlockNumberResponse } from "./rpc-response.js";
 
 const CONSOLE_API = "https://console-api.blockvectra.com/v1";
 const API_BASE = "https://api.blockvectra.com/v1";
@@ -107,22 +108,25 @@ async function main() {
       headers: { "Content-Type": "application/json", "x-api-key": apiKey },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_blockNumber", params: [] }),
     });
-    const rpcJson = (await rpcRes.json()) as {
-      result?: string;
-      error?: { code: number; message: string; data?: { retryable?: boolean } };
-    };
-    if (rpcJson.result) {
-      blockNumberHex = rpcJson.result;
+    let rpcJson: unknown;
+    try {
+      rpcJson = await rpcRes.json();
+    } catch {
+      throw new Error(`RPC response was not valid JSON (HTTP ${rpcRes.status})`);
+    }
+    const response = classifyBlockNumberResponse(rpcRes.ok, rpcJson);
+    if (response.kind === "success") {
+      blockNumberHex = response.blockNumber;
       break;
     }
-    if (rpcJson.error?.data?.retryable && attempt < 5) {
-      console.log(`      Waiting for key cache propagation (attempt ${attempt}/5)...`);
+    if (response.kind === "retryable-error" && attempt < 5) {
+      console.log(`      Retrying RPC verification (attempt ${attempt}/5)...`);
       await sleep(2000);
       continue;
     }
-    throw new Error(`RPC call failed: ${JSON.stringify(rpcJson.error)}`);
+    throw new Error(`RPC verification failed (HTTP ${rpcRes.status}): invalid response or rejected call`);
   }
-  console.log(`      Latest Block: ${parseInt(blockNumberHex!, 16)} (${blockNumberHex})`);
+  console.log(`      Latest Block: ${BigInt(blockNumberHex!).toString(10)} (${blockNumberHex})`);
 
   // 5. Query Data API read-only endpoint
   console.log("\n[5/5] Querying Data API GET /{chain}/status/freshness...");
