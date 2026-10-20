@@ -124,7 +124,7 @@ const result = await collectBalancePages(async (cursor) => {
 }, chain);
 ```
 
-实际使用前须确认所选链在该端点上的能力与覆盖范围；本仓库不声明 Robinhood 余额当前可用，也未对线上 API 运行过此模块。余额来自每 6 小时刷新一次的快照（另有最多 30 分钟随机延迟及刷新耗时），数据可能过期。`meta.as_of_block` 是索引头部高度，不是快照高度；请读取 `meta.refreshed_at`（`null` 表示未知，按过期处理）。分页结果不是事务一致的资产组合；`pages` 保留每页原始 `meta`。
+实际使用前须确认所选链在该端点上的能力与覆盖范围；本仓库不声明 Robinhood 余额当前可用，也未对线上 API 运行过此模块。余额来自每 6 小时刷新一次的快照（另有最多 30 分钟随机延迟及刷新耗时），数据可能过期。`meta.as_of_block` 是索引头部高度，不是快照高度；请读取 `meta.refreshed_at`（`null` 表示未知，按过期处理）。分页结果不是事务一致的资产组合；`pages` 保留每页原始 `meta`。聚合的 `refreshedAt` 仅在所有页都报告同一个已知时间时才是该时间；只要任一页的 `refreshed_at` 为 `null`，不论页序，聚合值即为 `null`（未知）；即使中间夹着 `null` 页，不同的已知时间仍会被拒绝。
 
 ---
 

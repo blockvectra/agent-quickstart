@@ -124,7 +124,7 @@ const result = await collectBalancePages(async (cursor) => {
 }, chain);
 ```
 
-Before real use, confirm the selected chain's capability and coverage for this endpoint; this repository makes no claim that Robinhood balances are currently available and has not run this against a live API. Balances come from a snapshot refreshed every 6 hours (plus up to 30 minutes of delay and the refresh run), so rows may be stale. `meta.as_of_block` is the indexed head, not the snapshot height; read `meta.refreshed_at` (`null` means unknown, treat as stale). Pages are not a transactionally consistent portfolio; `pages` keeps each page's original `meta`.
+Before real use, confirm the selected chain's capability and coverage for this endpoint; this repository makes no claim that Robinhood balances are currently available and has not run this against a live API. Balances come from a snapshot refreshed every 6 hours (plus up to 30 minutes of delay and the refresh run), so rows may be stale. `meta.as_of_block` is the indexed head, not the snapshot height; read `meta.refreshed_at` (`null` means unknown, treat as stale). Pages are not a transactionally consistent portfolio; `pages` keeps each page's original `meta`. The aggregate `refreshedAt` is the shared known time only when every page reported the same one; if any page has `refreshed_at: null` it is `null` (unknown), regardless of page order, and differing known times are still rejected even with a `null` page between them.
 
 ---
 

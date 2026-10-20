@@ -142,10 +142,17 @@ test("null freshness stays unknown and is not fabricated", async () => {
   const allNull = await collectBalancePages(
     reader([page([row(T1)], "c1", meta(null)), page([row(T2)], undefined, meta(null))]).read, CHAIN);
   assert.equal(allNull.refreshedAt, null);
-  const mixed = await collectBalancePages(
-    reader([page([row(T1)], "c1", meta(null)), page([row(T2)], undefined, meta("2026-10-20T00:00:00Z"))]).read, CHAIN);
-  assert.deepEqual(mixed.pages.map((m) => m.refreshed_at), [null, "2026-10-20T00:00:00Z"]);
-  assert.equal(mixed.refreshedAt, "2026-10-20T00:00:00Z");
+  const A = "2026-10-20T00:00:00Z";
+  const run = (stamps: (string | null)[]) =>
+    collectBalancePages(reader(stamps.map((s, i) =>
+      page([row("0x" + String(i + 1).repeat(40))], i < stamps.length - 1 ? `c${i}` : undefined, meta(s)))).read, CHAIN);
+  const nt = await run([null, A]);
+  assert.deepEqual(nt.pages.map((m) => m.refreshed_at), [null, A]);
+  assert.equal(nt.refreshedAt, null);
+  assert.equal((await run([A, null])).refreshedAt, null);
+  assert.equal((await run([A, A])).refreshedAt, A);
+  assert.equal((await run([null, null])).refreshedAt, null);
+  await assert.rejects(run([A, null, "2026-10-20T06:00:00Z"]), /snapshot changed/);
 });
 
 test("duplicate tokens are rejected across pages (case-insensitive) and within a page", async () => {

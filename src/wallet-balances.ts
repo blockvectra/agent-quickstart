@@ -29,7 +29,7 @@ export interface CollectedBalances {
   balances: AddressBalance[];
   /** Original meta of every page, in fetch order. */
   pages: BalanceMeta[];
-  /** The single known refreshed_at seen across pages, or null if all were unknown. */
+  /** The shared refreshed_at only if every page reported the same known value; null if any page was unknown. */
   refreshedAt: string | null;
 }
 
@@ -95,17 +95,20 @@ export async function collectBalancePages(
   const pages: BalanceMeta[] = [];
   const tokens = new Set<string>();
   const cursors = new Set<string>();
-  let refreshedAt: string | null = null;
+  let knownStamp: string | null = null;
+  let hasUnknown = false;
   let cursor: string | undefined;
 
   for (let n = 1; ; n++) {
     const page = decodeBalancePage(await readPage(cursor), expectedChain);
     const stamp = page.meta.refreshed_at;
-    if (stamp !== null) {
-      if (refreshedAt !== null && refreshedAt !== stamp) {
-        throw new Error(`balances snapshot changed between pages: ${refreshedAt} -> ${stamp}`);
+    if (stamp === null) {
+      hasUnknown = true;
+    } else {
+      if (knownStamp !== null && knownStamp !== stamp) {
+        throw new Error(`balances snapshot changed between pages: ${knownStamp} -> ${stamp}`);
       }
-      refreshedAt = stamp;
+      knownStamp = stamp;
     }
     for (const row of page.data) {
       const key = row.token.toLowerCase();
@@ -114,7 +117,9 @@ export async function collectBalancePages(
       balances.push(row);
     }
     pages.push(page.meta);
-    if (page.next_cursor === undefined) return { balances, pages, refreshedAt };
+    if (page.next_cursor === undefined) {
+      return { balances, pages, refreshedAt: hasUnknown ? null : knownStamp };
+    }
     if (cursors.has(page.next_cursor)) throw new Error("balances pagination cursor repeated");
     if (n >= maxPages) throw new Error(`balances pagination exceeded maxPages (${maxPages})`);
     cursors.add(page.next_cursor);
