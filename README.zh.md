@@ -99,6 +99,8 @@ npm start
 
 此主网示例不通过相似显示名称选链，也不回退到测试网。主网目录条目缺失、重复或链 ID 不符时，在 RPC 前停止；`eth_chainId` 的有效结果必须等于 `4663`，才继续读区块号及 Data API 新鲜度。成功运行因此增加一次只读 RPC；链验证失败时，之前的钱包、账户或 API Key 创建可能已经完成。
 
+Data API 新鲜度请求设置 15 秒超时且不重试。仅当 HTTP 成功、JSON 响应为非数组对象、`meta.chain` 等于所选 `robinhood_mainnet`、`data` 为数组，且每行的 `dataset` 为字符串、`max_block_number` 与 `seconds_behind` 均为整数或 `null` 时才继续。异常行会以本地稳定错误停止，错误保留 HTTP 状态但不回显上游正文。空列表、0、负整数、`null` 及额外字段均允许。该检查只证明请求流程和所消费字段的结构，不代表所有数据集新鲜、无过期或完整；`null` 会记为 unknown 而不是 0。
+
 运行 `npm test` 和 `npm run typecheck` 可做离线回归检查；测试替换网络调用，不会创建账户。
 
 PR 和 `main` 更新会通过 [Offline checks](.github/workflows/offline-checks.yml) 在 Node.js `24.21.0` 上自动执行这两项检查，依赖按锁文件使用 `npm ci --ignore-scripts` 安装。

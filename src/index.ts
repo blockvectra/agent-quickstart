@@ -2,6 +2,7 @@ import path from "node:path";
 import { loadOrCreateWallet } from "./wallet.js";
 import { classifyQuantityResponse } from "./rpc-response.js";
 import { ROBINHOOD_MAINNET_ID, selectRobinhoodMainnet } from "./chain-directory.js";
+import { readFreshness } from "./data-freshness.js";
 
 const CONSOLE_API = "https://console-api.blockvectra.com/v1";
 const API_BASE = "https://api.blockvectra.com/v1";
@@ -136,15 +137,15 @@ async function main() {
   console.log("\n[5/5] Querying Data API GET /{chain}/status/freshness...");
   const dataRes = await fetch(`${API_BASE}/data/${rhChain.chain}/status/freshness`, {
     headers: { "x-api-key": apiKey },
+    signal: AbortSignal.timeout(15000),
   });
-  if (!dataRes.ok) throw new Error(`Data API failed: ${dataRes.status} ${await dataRes.text()}`);
-  const freshness = (await dataRes.json()) as {
-    data: Array<{ dataset: string; max_block_number: number; seconds_behind: number }>;
-  };
-  console.log(`      Data Datasets Tracked: ${freshness.data.length}`);
-  const blockDataset = freshness.data.find((d) => d.dataset === "blocks");
+  const freshness = await readFreshness(dataRes, rhChain.chain);
+  console.log(`      Data Datasets Tracked: ${freshness.length}`);
+  const blockDataset = freshness.find((d) => d.dataset === "blocks");
   if (blockDataset) {
-    console.log(`      Dataset 'blocks': block ${blockDataset.max_block_number} (${blockDataset.seconds_behind}s lag)`);
+    const block = blockDataset.max_block_number === null ? "unknown" : blockDataset.max_block_number.toString(10);
+    const lag = blockDataset.seconds_behind === null ? "unknown" : `${blockDataset.seconds_behind}s`;
+    console.log(`      Dataset 'blocks': block ${block} (${lag} lag)`);
   }
 
   console.log("\n=== Quickstart Completed Successfully ===");
