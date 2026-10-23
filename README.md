@@ -99,6 +99,8 @@ Whole-request errors with `id: null` may be retried when explicitly marked retry
 
 This mainnet example does not select a network by display-name similarity or fall back to testnet. Missing, duplicate or inconsistent mainnet directory entries stop before RPC. A valid `eth_chainId` result must equal `4663` before the script requests a block number or Data API freshness. This adds one read-only RPC call on a successful run; chain verification may fail after wallet/account/key provisioning has already occurred.
 
+The Data API freshness request uses a 15-second timeout with no retry. A response is consumed only when HTTP succeeds, the JSON envelope is an object, `meta.chain` equals the selected `robinhood_mainnet`, `data` is an array, and every row has a string `dataset` with `max_block_number` and `seconds_behind` each an integer or `null`. Unexpected rows stop the run with a local error that preserves the HTTP status but not the upstream body. Empty lists, zero, negative, `null` and extra fields are accepted. This check only proves the request flow and the consumed fields; it does not establish that every dataset is fresh, stale-free or complete, and a `null` value is logged as unknown rather than zero.
+
 Run `npm test` and `npm run typecheck` for offline regression checks. Tests replace network calls and do not provision accounts.
 
 Pull requests and pushes to `main` run these checks on Node.js `24.21.0` through [Offline checks](.github/workflows/offline-checks.yml), after installing the lockfile dependencies with `npm ci --ignore-scripts`.

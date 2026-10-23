@@ -54,7 +54,7 @@ function runEntry(t: TestContext, replies: Reply[], options: { directory?: unkno
       }
       if (String(url).endsWith('/data/robinhood_mainnet/status/freshness')) {
         trace.data++;
-        return Response.json({ data: [] });
+        return Response.json({ data: [], meta: { chain: 'robinhood_mainnet' } });
       }
       trace.unexpected++;
       throw Error('UNEXPECTED_OFFLINE_ROUTE');
