@@ -1,23 +1,26 @@
 # BlockVectra AI Agent Quickstart (TypeScript)
 
-A minimal, end-to-end TypeScript example demonstrating how an autonomous AI agent or automated script can onboard and interact with BlockVectra without a browser or human intervention.
+A TypeScript example for AI agents and automated scripts. It starts with a keyless read of Robinhood mainnet over the public RPC, with no wallet, account, or API key required. When you need the Data API or an account, continue to the full SIWE onboarding flow below.
 
-This example covers:
+## Start with a keyless read
+
+This is the smallest BlockVectra path in the repository, and the first thing to run from a fresh checkout. Prerequisites: Node.js >= 18, npm, and git.
+
+```bash
+git clone https://github.com/blockvectra/agent-quickstart.git
+cd agent-quickstart
+npm ci --ignore-scripts
+npm run read:public
+```
+
+The command reads the public chain directory, confirms the exact `robinhood_mainnet` public endpoint and required methods, then serially reads the chain ID and latest block number. The whole check uses at most three HTTP requests: the directory plus two JSON-RPC calls. No wallet, account sign-up, or API key is involved. If the directory stops advertising the public endpoint or the required methods, it stops before any RPC. Data API and account operations still need an API key, and the full onboarding flow below remains available.
+
+Beyond the keyless read, the full example covers:
 1. **Wallet identity**: Reads an Ethereum EOA private key from `AGENT_PRIVATE_KEY` or from a local `.agent-wallet.json` file. If neither is configured, generates a new wallet locally and saves it to `.agent-wallet.json` (permission `0600`) so subsequent runs reuse the same identity instead of creating new accounts.
 2. **Programmatic account sign-up**: Authenticates via Sign-In with Ethereum (SIWE / EIP-191) against `https://console-api.blockvectra.com/v1` in programmatic mode (omitting the `Origin` header). First-time wallet sign-in automatically provisions an account.
 3. **API key provisioning**: Creates an API key (`rgw_...`) using the authenticated session token (`rgs_...`).
 4. **JSON-RPC execution**: Reads the active chain directory from `GET https://api.blockvectra.com/v1/chains`, selects the unique `robinhood_mainnet` entry with numeric chain ID `4663`, verifies `eth_chainId` on that endpoint, then executes `eth_blockNumber` using the API key.
 5. **Data API query**: Calls the read-only dataset freshness endpoint (`GET /v1/data/{chain}/status/freshness`) defined in the OpenAPI specification.
-
-## Start with a keyless read
-
-After `npm install`, run:
-
-```bash
-npm run read:public
-```
-
-This is the smallest BlockVectra path in the repository. It reads the public chain directory, confirms the exact `robinhood_mainnet` public endpoint and required methods, then serially reads the chain ID and latest block number. The whole check uses at most three HTTP requests: the directory plus two JSON-RPC calls. No wallet, account sign-up, or API key is involved. If the directory stops advertising the public endpoint or the required methods, it stops before any RPC. Data API and account operations still need an API key, and the full onboarding flow below remains available.
 
 ---
 
@@ -65,22 +68,24 @@ This is the smallest BlockVectra path in the repository. It reads the public cha
 ## Prerequisites
 
 - Node.js >= 18.0.0
-- npm or another Node.js package manager
+- npm
+- git
 
 ---
 
 ## Installation & Setup
 
-1. Clone or navigate to the directory:
+1. Clone the repository and enter the directory:
 
    ```bash
+   git clone https://github.com/blockvectra/agent-quickstart.git
    cd agent-quickstart
    ```
 
-2. Install dependencies (only `viem` and `tsx`):
+2. Install dependencies from the lockfile:
 
    ```bash
-   npm install
+   npm ci --ignore-scripts
    ```
 
 3. (Optional) Configure an existing wallet by injecting `AGENT_PRIVATE_KEY` into the process environment through your runtime's secret manager. `.env.example` documents its format; `npm start` does **not** load a `.env` file automatically.

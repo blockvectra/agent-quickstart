@@ -1,23 +1,26 @@
 # BlockVectra AI Agent 快速上手（TypeScript）
 
-本仓库提供一个端到端的 TypeScript 开源示例，展示自主 AI Agent 或自动化脚本如何在脱离浏览器和人工干预的情况下，程序化接入并使用 BlockVectra。
+本仓库提供面向 AI Agent 与自动化脚本的 TypeScript 示例。它先从 Robinhood mainnet 的公开 RPC 做无 Key 读取，不需要钱包、注册或 API Key；需要 Data API 或账户时，再继续下文完整的 SIWE 流程。
 
-示例涵盖完整流程：
+## 先做无 Key 读取
+
+这是本仓库中最小的 BlockVectra 路径，也是全新检出后应先运行的步骤。前提：Node.js >= 18、npm、git。
+
+```bash
+git clone https://github.com/blockvectra/agent-quickstart.git
+cd agent-quickstart
+npm ci --ignore-scripts
+npm run read:public
+```
+
+该命令先读取公开链目录，确认精确的 `robinhood_mainnet` 公开端点及所需方法，再串行读取链 ID 和最新区块号。整个过程最多 3 次 HTTP 请求，即目录加 2 次 JSON-RPC。不需要钱包、注册或 API Key。若目录不再声明该公开端点或所需方法，会在任何 RPC 之前停止。Data API 和账户操作仍然需要 API Key，下文的完整开户流程保持不变。
+
+除无 Key 读取外，完整示例还涵盖：
 1. **钱包身份**：从环境变量 `AGENT_PRIVATE_KEY` 或本地 `.agent-wallet.json` 文件读取以太坊 EOA 私钥；若均未配置，则在本地生成新钱包并保存至 `.agent-wallet.json`（权限 `0600`），以便后续运行复用相同身份，避免重复开户。
 2. **程序化开户与登录**：通过以太坊签名（SIWE / EIP-191）调用 `https://console-api.blockvectra.com/v1` 进行鉴权（程序化模式，不带 `Origin` 请求头）。新钱包首次登录自动完成开户。
 3. **API Key 创建**：使用登录获得的会话令牌（`rgs_...`）调用控制台接口生成 API Key（`rgw_...`）。
 4. **JSON-RPC 调用**：从 `GET https://api.blockvectra.com/v1/chains` 获取当前链目录及策略，精确选择唯一且数字链 ID 为 `4663` 的 `robinhood_mainnet`，先验证该端点的 `eth_chainId`，再使用 API Key 调用 `eth_blockNumber`。
 5. **Data API 查询**：根据 OpenAPI 规范调用只读的数据新鲜度接口（`GET /v1/data/{chain}/status/freshness`）。
-
-## 先做无 Key 读取
-
-执行 `npm install` 后运行：
-
-```bash
-npm run read:public
-```
-
-这是本仓库中最小的 BlockVectra 路径：先读取公开链目录，确认精确的 `robinhood_mainnet` 公开端点及所需方法，再串行读取链 ID 和最新区块号。整个过程最多 3 次 HTTP 请求，即目录加 2 次 JSON-RPC。不需要钱包、注册或 API Key。若目录不再声明该公开端点或所需方法，会在任何 RPC 之前停止。Data API 和账户操作仍然需要 API Key，下文的完整开户流程保持不变。
 
 ---
 
@@ -65,22 +68,24 @@ npm run read:public
 ## 环境准备
 
 - Node.js >= 18.0.0
-- npm 或兼容的 Node.js 包管理器
+- npm
+- git
 
 ---
 
 ## 安装与配置
 
-1. 进入项目目录：
+1. 克隆仓库并进入目录：
 
    ```bash
+   git clone https://github.com/blockvectra/agent-quickstart.git
    cd agent-quickstart
    ```
 
-2. 安装依赖（仅依赖 `viem` 与 `tsx`）：
+2. 按锁文件安装依赖：
 
    ```bash
-   npm install
+   npm ci --ignore-scripts
    ```
 
 3. （可选）通过运行环境的机密管理器，将已有钱包私钥注入进程环境变量 `AGENT_PRIVATE_KEY`。`.env.example` 仅说明格式；`npm start` **不会**自动加载 `.env` 文件。
