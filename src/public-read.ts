@@ -48,6 +48,32 @@ function validatePublicReadEntry(entry: Record<string, unknown>): void {
   }
 }
 
+function discardResponseBody(response: Response): void {
+  const body = response.body;
+  if (body === null || typeof body.cancel !== "function") return;
+  try {
+    void body.cancel().catch(() => {});
+  } catch {
+    // Cleanup is best effort and must not replace the first business error.
+  }
+}
+
+function cancelReader(reader: ReadableStreamDefaultReader<Uint8Array>): void {
+  try {
+    void reader.cancel().catch(() => {});
+  } catch {
+    // Cleanup is best effort and must not replace the first business error.
+  }
+}
+
+function releaseReader(reader: ReadableStreamDefaultReader<Uint8Array>): void {
+  try {
+    reader.releaseLock();
+  } catch {
+    // Cleanup is best effort and must not replace the first business error.
+  }
+}
+
 async function request(
   fetchImpl: typeof globalThis.fetch,
   url: string,
@@ -55,37 +81,109 @@ async function request(
   signal: AbortSignal,
   label: string,
 ): Promise<Response> {
-  let response: Response;
-  try {
-    response = await fetchImpl(url, { ...init, redirect: "error", signal });
-  } catch {
-    throw new Error(`${label} request failed`);
+  const fetchPromise = Promise.resolve().then(() => fetchImpl(url, { ...init, redirect: "error", signal }));
+
+  const response = await new Promise<Response>((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => signal.removeEventListener("abort", onAbort);
+    const onAbort = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      // A fetch mock can resolve after the deadline even though it ignored the signal.
+      void fetchPromise.then((lateResponse) => discardResponseBody(lateResponse), () => {});
+      reject(new Error(`${label} request timed out`));
+    };
+
+    if (signal.aborted) {
+      onAbort();
+      return;
+    }
+    signal.addEventListener("abort", onAbort, { once: true });
+    fetchPromise.then(
+      (value) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(value);
+      },
+      () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(new Error(`${label} request failed`));
+      },
+    );
+  });
+
+  if (response.redirected) {
+    discardResponseBody(response);
+    throw new Error(`${label} response was redirected`);
   }
-  if (response.redirected) throw new Error(`${label} response was redirected`);
   return response;
+}
+
+function readWithDeadline(
+  readPromise: Promise<ReadableStreamReadResult<Uint8Array>>,
+  signal: AbortSignal,
+  label: string,
+): Promise<ReadableStreamReadResult<Uint8Array>> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => signal.removeEventListener("abort", onAbort);
+    const onAbort = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error(`${label} response timed out`));
+    };
+
+    if (signal.aborted) {
+      onAbort();
+      return;
+    }
+    signal.addEventListener("abort", onAbort, { once: true });
+    readPromise.then(
+      (result) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(result);
+      },
+      () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(new Error(`${label} response body could not be read`));
+      },
+    );
+  });
 }
 
 async function readJson(response: Response, signal: AbortSignal, label: string): Promise<unknown> {
   if (response.body === null || typeof response.body.getReader !== "function") {
+    discardResponseBody(response);
     throw new Error(`${label} response body is unavailable`);
   }
 
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let totalBytes = 0;
+  let pendingRead: Promise<ReadableStreamReadResult<Uint8Array>> | undefined;
 
   try {
     while (true) {
       if (signal.aborted) throw new Error(`${label} response timed out`);
 
-      let result: ReadableStreamReadResult<Uint8Array>;
       try {
-        result = await reader.read();
+        pendingRead = reader.read();
       } catch {
         throw new Error(`${label} response body could not be read`);
       }
 
-      if (signal.aborted) throw new Error(`${label} response timed out`);
+      const result = await readWithDeadline(pendingRead, signal, label);
+      pendingRead = undefined;
+
       if (result.done) break;
       if (!(result.value instanceof Uint8Array)) {
         throw new Error(`${label} response body was not a byte stream`);
@@ -93,17 +191,24 @@ async function readJson(response: Response, signal: AbortSignal, label: string):
 
       totalBytes += result.value.byteLength;
       if (totalBytes > MAX_RESPONSE_BYTES) {
-        try {
-          await reader.cancel();
-        } catch {
-          // The body is already unusable; the size failure is the error to report.
-        }
         throw new Error(`${label} response exceeded 128 KiB`);
       }
       chunks.push(result.value);
     }
+  } catch (error) {
+    // cancel() may itself hang. Start it without awaiting it, then let the
+    // reader's pending read settle before releasing the lock.
+    cancelReader(reader);
+    if (pendingRead !== undefined) {
+      try {
+        await pendingRead;
+      } catch {
+        // Cleanup must not replace the first business error.
+      }
+    }
+    throw error;
   } finally {
-    reader.releaseLock();
+    releaseReader(reader);
   }
 
   const bytes = new Uint8Array(totalBytes);
@@ -143,6 +248,7 @@ async function readRpcQuantity(
   }, signal, `Public RPC ${method}`);
 
   if (!response.ok) {
+    discardResponseBody(response);
     throw new Error(`Public RPC ${method} failed (HTTP ${response.status})`);
   }
 
@@ -171,6 +277,7 @@ export async function readPublicHead(
   }, directorySignal, "Chain directory");
 
   if (!directoryResponse.ok) {
+    discardResponseBody(directoryResponse);
     throw new Error(`Chain directory request failed (HTTP ${directoryResponse.status})`);
   }
   const directory = await readJson(directoryResponse, directorySignal, "Chain directory");

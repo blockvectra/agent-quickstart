@@ -402,3 +402,144 @@ test("a body exactly at 128 KiB is accepted when it contains valid JSON", async 
   const result = await readPublicHead(fetchImpl);
   assert.equal(result.blockNumber, "42");
 });
+
+async function withShortRequestTimeout<T>(run: () => Promise<T>): Promise<T> {
+  const original = AbortSignal.timeout;
+  (AbortSignal as unknown as { timeout: typeof AbortSignal.timeout }).timeout =
+    ((milliseconds: number) => original(Math.min(milliseconds, 20))) as typeof AbortSignal.timeout;
+  try {
+    return await run();
+  } finally {
+    (AbortSignal as unknown as { timeout: typeof AbortSignal.timeout }).timeout = original;
+  }
+}
+
+async function expectBoundedRejection(promise: Promise<unknown>, pattern: RegExp): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await assert.rejects(
+      Promise.race([
+        promise,
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error("operation is still pending")), 500);
+        }),
+      ]),
+      pattern,
+    );
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
+test("a pending fetch is bounded by the request deadline", async () => {
+  let calls = 0;
+  const fetchImpl = (() => {
+    calls += 1;
+    return new Promise<Response>(() => {});
+  }) as typeof fetch;
+
+  await withShortRequestTimeout(async () => {
+    await expectBoundedRejection(readPublicHead(fetchImpl), /request timed out/);
+  });
+  assert.equal(calls, 1);
+});
+
+test("a pending body read times out, cancels, and releases the reader", async () => {
+  let cancelled = 0;
+  const body = new ReadableStream<Uint8Array>({
+    start() {},
+    cancel() {
+      cancelled += 1;
+      return new Promise<void>(() => {});
+    },
+  });
+  const { fetchImpl, calls } = scriptedFetch([new Response(body, { status: 200 })]);
+
+  await withShortRequestTimeout(async () => {
+    await expectBoundedRejection(readPublicHead(fetchImpl), /response timed out/);
+  });
+  assert.equal(cancelled, 1);
+  assert.equal(body.locked, false);
+  assert.equal(calls.length, 1);
+});
+
+test("a pending cancel after an oversize body cannot block rejection or release", async () => {
+  let cancelled = 0;
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(new Uint8Array(128 * 1024 + 1));
+    },
+    cancel() {
+      cancelled += 1;
+      return new Promise<void>(() => {});
+    },
+  });
+  const { fetchImpl, calls } = scriptedFetch([new Response(body, { status: 200 })]);
+
+  await expectBoundedRejection(readPublicHead(fetchImpl), /exceeded 128 KiB/);
+  assert.equal(cancelled, 1);
+  assert.equal(body.locked, false);
+  assert.equal(calls.length, 1);
+});
+
+test("non-2xx responses cancel their bodies at every phase without extra requests", async () => {
+  const tracked = (status: number) => {
+    let cancelled = 0;
+    const body = new ReadableStream<Uint8Array>({
+      start() {},
+      cancel() {
+        cancelled += 1;
+        return new Promise<void>(() => {});
+      },
+    });
+    return {
+      response: new Response(body, { status }),
+      body,
+      cancelled: () => cancelled,
+    };
+  };
+
+  const directory = tracked(503);
+  const directoryFetch = scriptedFetch([directory.response]);
+  await assert.rejects(readPublicHead(directoryFetch.fetchImpl), /HTTP 503/);
+  assert.equal(directory.cancelled(), 1);
+  assert.equal(directory.body.locked, false);
+  assert.equal(directoryFetch.calls.length, 1);
+
+  const chainId = tracked(500);
+  const chainIdFetch = scriptedFetch([response(directoryWith()), chainId.response]);
+  await assert.rejects(readPublicHead(chainIdFetch.fetchImpl), /HTTP 500/);
+  assert.equal(chainId.cancelled(), 1);
+  assert.equal(chainId.body.locked, false);
+  assert.equal(chainIdFetch.calls.length, 2);
+
+  const blockNumber = tracked(502);
+  const blockFetch = scriptedFetch([
+    response(directoryWith()),
+    response(rpcResult("0x1237")),
+    blockNumber.response,
+  ]);
+  await assert.rejects(readPublicHead(blockFetch.fetchImpl), /HTTP 502/);
+  assert.equal(blockNumber.cancelled(), 1);
+  assert.equal(blockNumber.body.locked, false);
+  assert.equal(blockFetch.calls.length, 3);
+});
+
+test("a redirected response is cancelled without following it or making extra requests", async () => {
+  let cancelled = 0;
+  const body = new ReadableStream<Uint8Array>({
+    start() {},
+    cancel() {
+      cancelled += 1;
+      return new Promise<void>(() => {});
+    },
+  });
+  const redirected = new Response(body, { status: 200 });
+  Object.defineProperty(redirected, "redirected", { value: true });
+  const { fetchImpl, calls } = scriptedFetch([redirected]);
+
+  await assert.rejects(readPublicHead(fetchImpl), /redirected/);
+  assert.equal(cancelled, 1);
+  assert.equal(body.locked, false);
+  assert.equal(calls.length, 1);
+});
