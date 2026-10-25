@@ -9,6 +9,16 @@
 4. **JSON-RPC 调用**：从 `GET https://api.blockvectra.com/v1/chains` 获取当前链目录及策略，精确选择唯一且数字链 ID 为 `4663` 的 `robinhood_mainnet`，先验证该端点的 `eth_chainId`，再使用 API Key 调用 `eth_blockNumber`。
 5. **Data API 查询**：根据 OpenAPI 规范调用只读的数据新鲜度接口（`GET /v1/data/{chain}/status/freshness`）。
 
+## 先做无 Key 读取
+
+执行 `npm install` 后运行：
+
+```bash
+npm run read:public
+```
+
+这是本仓库中最小的 BlockVectra 路径：先读取公开链目录，确认精确的 `robinhood_mainnet` 公开端点及所需方法，再串行读取链 ID 和最新区块号。整个过程最多 3 次 HTTP 请求，即目录加 2 次 JSON-RPC。不需要钱包、注册或 API Key。若目录不再声明该公开端点或所需方法，会在任何 RPC 之前停止。Data API 和账户操作仍然需要 API Key，下文的完整开户流程保持不变。
+
 ---
 
 ## 架构与程序化流程

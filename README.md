@@ -9,6 +9,16 @@ This example covers:
 4. **JSON-RPC execution**: Reads the active chain directory from `GET https://api.blockvectra.com/v1/chains`, selects the unique `robinhood_mainnet` entry with numeric chain ID `4663`, verifies `eth_chainId` on that endpoint, then executes `eth_blockNumber` using the API key.
 5. **Data API query**: Calls the read-only dataset freshness endpoint (`GET /v1/data/{chain}/status/freshness`) defined in the OpenAPI specification.
 
+## Start with a keyless read
+
+After `npm install`, run:
+
+```bash
+npm run read:public
+```
+
+This is the smallest BlockVectra path in the repository. It reads the public chain directory, confirms the exact `robinhood_mainnet` public endpoint and required methods, then serially reads the chain ID and latest block number. The whole check uses at most three HTTP requests: the directory plus two JSON-RPC calls. No wallet, account sign-up, or API key is involved. If the directory stops advertising the public endpoint or the required methods, it stops before any RPC. Data API and account operations still need an API key, and the full onboarding flow below remains available.
+
 ---
 
 ## Architecture and Programmatic Workflow
