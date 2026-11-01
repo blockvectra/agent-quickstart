@@ -232,12 +232,14 @@ Configure the `headers` object so the API key is passed securely in HTTP headers
     "blockvectra": {
       "url": "https://docs.blockvectra.com/mcp",
       "headers": {
-        "x-api-key": "${BLOCKVECTRA_API_KEY}"
+        "x-api-key": "${env:BLOCKVECTRA_API_KEY}"
       }
     }
   }
 }
 ```
+
+Cursor resolves environment variables with `${env:NAME}`. Make `BLOCKVECTRA_API_KEY` available to the Cursor process before starting it; this HTTP configuration does not read a project `.env` file. See [Cursor MCP configuration](https://cursor.com/docs/mcp#config-interpolation).
 
 ### MCP Security Requirements
 - **Headers only**: API keys must be configured strictly in HTTP request headers (`x-api-key` or `Authorization: Bearer`).
