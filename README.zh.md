@@ -232,12 +232,14 @@ claude mcp add --transport http -H "x-api-key: $BLOCKVECTRA_API_KEY" blockvectra
     "blockvectra": {
       "url": "https://docs.blockvectra.com/mcp",
       "headers": {
-        "x-api-key": "${BLOCKVECTRA_API_KEY}"
+        "x-api-key": "${env:BLOCKVECTRA_API_KEY}"
       }
     }
   }
 }
 ```
+
+Cursor 使用 `${env:NAME}` 引用环境变量。请在启动 Cursor 前让其进程能读取 `BLOCKVECTRA_API_KEY`；这份 HTTP 配置不会读取项目的 `.env` 文件。详见 [Cursor MCP 配置](https://cursor.com/docs/mcp#config-interpolation)。
 
 ### MCP 密钥安全说明
 - **仅限请求头传递**：API Key 仅能通过 MCP 客户端的 HTTP 请求头（`x-api-key` 或 `Authorization: Bearer`）配置。
