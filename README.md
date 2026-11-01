@@ -2,6 +2,18 @@
 
 A TypeScript example for AI agents and automated scripts. It starts with a keyless read of Robinhood mainnet over the public RPC, with no wallet, account, or API key required. When you need the Data API or an account, continue to the full SIWE onboarding flow below.
 
+## Ask a documentation question with an Agent Skill
+
+For documentation help without running the TypeScript example, install the [BlockVectra documentation skill](skills/blockvectra-docs/SKILL.md) in an Agent Skills-compatible client. The pinned installer requires Node.js >= 22.20.0:
+
+```bash
+npx --yes skills@1.7.4 add blockvectra/agent-quickstart --skill blockvectra-docs
+```
+
+Try: "Use blockvectra-docs to explain Robinhood mainnet public RPC setup and cite the source." The skill uses configured MCP documentation tools or an available HTTP reader. It needs no BlockVectra account or key and does not run RPC or the SIWE onboarding example. It contains instructions, not a bundled model or MCP server.
+
+The installer collects anonymous installation telemetry by default; set `DISABLE_TELEMETRY=1` to opt out. See the [installer documentation](https://github.com/vercel-labs/skills#telemetry).
+
 ## Start with a keyless read
 
 This is the smallest BlockVectra path in the repository, and the first thing to run from a fresh checkout. Prerequisites: Node.js >= 18, npm, and git.

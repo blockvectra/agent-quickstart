@@ -2,6 +2,18 @@
 
 本仓库提供面向 AI Agent 与自动化脚本的 TypeScript 示例。它先从 Robinhood mainnet 的公开 RPC 做无 Key 读取，不需要钱包、注册或 API Key；需要 Data API 或账户时，再继续下文完整的 SIWE 流程。
 
+## 用 Agent Skill 查询文档
+
+只需要文档帮助时，可在兼容 Agent Skills 的客户端安装 [BlockVectra 文档技能](skills/blockvectra-docs/SKILL.md)，无需运行 TypeScript 示例。以下固定版本的安装器需要 Node.js >= 22.20.0：
+
+```bash
+npx --yes skills@1.7.4 add blockvectra/agent-quickstart --skill blockvectra-docs
+```
+
+可以这样提问：“使用 blockvectra-docs，解释 Robinhood 主网公开 RPC 的接入方式，并引用原文。”技能使用已配置的 MCP 文档工具或可用的 HTTP 阅读工具，不需要 BlockVectra 账户或 Key，也不会执行 RPC 或 SIWE 开户示例。技能只提供指引，不包含模型或 MCP 服务。
+
+安装器默认收集匿名安装统计；可设置 `DISABLE_TELEMETRY=1` 退出。详见[安装器说明](https://github.com/vercel-labs/skills#telemetry)。
+
 ## 先做无 Key 读取
 
 这是本仓库中最小的 BlockVectra 路径，也是全新检出后应先运行的步骤。前提：Node.js >= 18、npm、git。
