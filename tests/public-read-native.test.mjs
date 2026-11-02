@@ -8,12 +8,17 @@ import test from "node:test";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const [major, minor] = process.versions.node.split(".").map(Number);
 const nativeSupported = (major === 22 && minor >= 18) || major > 24 || (major === 24 && minor >= 12);
-const files = ["public-read-cli.ts", "public-read.ts", "public-read-errors.ts", "chain-directory.ts", "rpc-response.ts"];
+const files = ["public-read-cli.ts", "public-read.ts", "public-read-chain.ts", "public-read-errors.ts", "chain-directory.ts", "rpc-response.ts"];
 const fixture = `
 import assert from "node:assert/strict";
 let calls = 0;
 const scenario = process.env.NATIVE_READ_CASE;
-const expected = scenario === "success" ? 3 : scenario === "wrong-chain" ? 2 : 1;
+const selected = scenario === "bsc" || scenario === "bsc-wrong-chain";
+const invalid = scenario === "invalid-argument" || scenario === "extra-argument";
+const chain = selected ? "bsc" : "robinhood_mainnet";
+const chainId = selected ? 56 : 4663;
+const endpoint = "https://api.blockvectra.com/v1/" + chain + "/public";
+const expected = invalid ? 0 : scenario === "success" || scenario === "bsc" ? 3 : scenario.endsWith("wrong-chain") ? 2 : 1;
 process.on("exit", () => assert.equal(calls, expected));
 globalThis.fetch = async (url, init) => {
   calls++;
@@ -25,18 +30,18 @@ globalThis.fetch = async (url, init) => {
     assert.equal(url, "https://api.blockvectra.com/v1/chains");
     assert.equal(init.method, "GET");
     if (scenario === "unavailable") return new Response("untrusted upstream body", { status: 503 });
-    return new Response(JSON.stringify({ chains: [{ chain: "robinhood_mainnet", chain_id: 4663, jsonrpc: true, public: { url: "https://api.blockvectra.com/v1/robinhood_mainnet/public", methods: ["eth_chainId", "eth_blockNumber"] } }] }));
+    return new Response(JSON.stringify({ chains: [{ chain, chain_id: chainId, jsonrpc: true, public: { url: endpoint, methods: ["eth_chainId", "eth_blockNumber"] } }] }));
   }
-  assert.equal(url, "https://api.blockvectra.com/v1/robinhood_mainnet/public");
+  assert.equal(url, endpoint);
   assert.equal(init.method, "POST");
   const request = JSON.parse(init.body);
   assert.equal(request.method, calls === 2 ? "eth_chainId" : "eth_blockNumber");
-  const result = calls === 2 ? (scenario === "wrong-chain" ? "0x1" : "0x1237") : "0x2a";
+  const result = calls === 2 ? (scenario.endsWith("wrong-chain") ? "0x1" : selected ? "0x38" : "0x1237") : "0x2a";
   return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result }));
 };
 `;
 
-for (const scenario of ["success", "unavailable", "wrong-chain"]) {
+for (const scenario of ["success", "unavailable", "wrong-chain", "bsc", "bsc-wrong-chain", "invalid-argument", "extra-argument"]) {
   test(`native Node keyless reader without installed dependencies: ${scenario}`, { skip: !nativeSupported }, async () => {
     const tempRoot = path.join(root, ".tmp");
     await mkdir(tempRoot, { recursive: true });
@@ -47,7 +52,7 @@ for (const scenario of ["success", "unavailable", "wrong-chain"]) {
       await writeFile(path.join(work, "package.json"), JSON.stringify({ type: "module" }));
       await writeFile(path.join(work, "fetch-fixture.mjs"), fixture);
       await assert.rejects(access(path.join(work, "node_modules")), { code: "ENOENT" });
-      const result = spawnSync(process.execPath, ["--import", path.join(work, "fetch-fixture.mjs"), "src/public-read-cli.ts"], {
+      const result = spawnSync(process.execPath, ["--import", path.join(work, "fetch-fixture.mjs"), "src/public-read-cli.ts", ...(scenario.startsWith("bsc") ? ["56"] : scenario === "invalid-argument" ? ["56\n"] : scenario === "extra-argument" ? ["56", "1"] : [])], {
         cwd: work,
         env: { PATH: process.env.PATH ?? "", BLOCKVECTRA_INTERNAL_QA: "1", NATIVE_READ_CASE: scenario },
         encoding: "utf8",
@@ -55,16 +60,18 @@ for (const scenario of ["success", "unavailable", "wrong-chain"]) {
       });
       assert.equal(result.error, undefined);
       assert.equal(result.signal, null);
-      if (scenario === "success") {
+      if (scenario === "success" || scenario === "bsc") {
         assert.equal(result.status, 0, result.stderr);
-        assert.deepEqual(JSON.parse(result.stdout), { chain: "robinhood_mainnet", chainId: 4663, blockNumber: "42" });
+        assert.deepEqual(JSON.parse(result.stdout), { chain: scenario === "bsc" ? "bsc" : "robinhood_mainnet", chainId: scenario === "bsc" ? 56 : 4663, blockNumber: "42" });
         assert.equal(result.stderr, "");
       } else {
         assert.equal(result.status, 1, result.stderr);
         assert.equal(result.stdout, "");
-        assert.equal(result.stderr, scenario === "unavailable"
+        assert.equal(result.stderr, scenario === "invalid-argument" || scenario === "extra-argument"
+          ? "Usage: node src/public-read-cli.ts [positive-decimal-chain-id]\n"
+          : scenario === "unavailable"
           ? "Public read failed: Chain directory returned HTTP 503. Check service availability before trying again manually; this command does not retry.\n"
-          : "Public read failed: could not read the Robinhood mainnet head.\n");
+          : "Public read failed: could not read the selected chain head.\n");
       }
     } finally {
       await rm(work, { recursive: true, force: true });

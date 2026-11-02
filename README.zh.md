@@ -24,6 +24,16 @@ cd agent-quickstart
 node src/public-read-cli.ts
 ```
 
+选择其他 EVM 链时，传入十进制 chain ID：
+
+```bash
+node src/public-read-cli.ts 56  # BSC 主网
+node src/public-read-cli.ts 1   # Ethereum 主网
+# npm 入口：npm run read:public -- 56
+```
+
+不传参数仍读取 Robinhood 主网（`4663`）。目标链必须在当前目录中唯一存在，并声明两个公开读取方法。读取器先核对 RPC 返回的链 ID 与传入值，再读取区块号；目标链或免 Key 策略不可用时立即停止。
+
 该入口使用 Node 的[内置 TypeScript 支持](https://nodejs.org/docs/latest-v22.x/api/typescript.html)，无需构建或 npm 安装。使用其他 Node.js 版本时，检出后仍可走原 npm 路径：
 
 ```bash
@@ -31,7 +41,7 @@ npm ci --ignore-scripts
 npm run read:public
 ```
 
-该命令先读取公开链目录，确认精确的 `robinhood_mainnet` 公开端点及所需方法，再串行读取链 ID 和最新区块号。整个过程最多 3 次 HTTP 请求，即目录加 2 次 JSON-RPC。不需要钱包、注册或 API Key。若目录不再声明该公开端点或所需方法，会在任何 RPC 之前停止。Data API 和账户操作仍然需要 API Key，下文的完整开户流程保持不变。
+该命令先读取公开链目录，确认所选链的精确公开端点及所需方法，再串行读取链 ID 和最新区块号。整个过程最多 3 次 HTTP 请求，即目录加 2 次 JSON-RPC。不需要钱包、注册或 API Key。若目录不再声明该公开端点或所需方法，会在任何 RPC 之前停止。Data API 和账户操作仍然需要 API Key，下文的完整开户流程保持不变。
 
 请求返回 HTTP 错误状态或超时时，命令会指出出错的目录请求或 RPC 方法，并以退出码 `1` 结束。遇到 HTTP `429` 时，请等待后再手动重试。命令不会自动重试，也不会输出响应正文或原始异常；其他失败仍使用通用错误提示。成功时继续输出相同的 JSON 结果。
 
