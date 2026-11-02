@@ -1,5 +1,5 @@
-import { readPublicHead } from "./public-read.js";
-import { formatPublicReadFailure } from "./public-read-errors.js";
+import { readPublicHead } from "./public-read.ts";
+import { formatPublicReadFailure } from "./public-read-errors.ts";
 
 async function main(): Promise<void> {
   const internalQa = process.env.BLOCKVECTRA_INTERNAL_QA === "1";

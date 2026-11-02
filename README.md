@@ -16,11 +16,17 @@ The installer collects anonymous installation telemetry by default; set `DISABLE
 
 ## Start with a keyless read
 
-This is the smallest BlockVectra path in the repository, and the first thing to run from a fresh checkout. Prerequisites: Node.js >= 18, npm, and git.
+With Node.js >= 24.12 and git, run the keyless reader directly without installing dependencies:
 
 ```bash
 git clone https://github.com/blockvectra/agent-quickstart.git
 cd agent-quickstart
+node src/public-read-cli.ts
+```
+
+Node's [built-in TypeScript support](https://nodejs.org/docs/latest-v24.x/api/typescript.html) runs this entry without a build or npm installation. For Node.js 18–23 or earlier Node.js 24 releases, use the existing npm path after cloning:
+
+```bash
 npm ci --ignore-scripts
 npm run read:public
 ```
