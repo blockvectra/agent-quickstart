@@ -1,6 +1,6 @@
 # BlockVectra AI Agent 快速上手（TypeScript）
 
-本仓库提供面向 AI Agent 与自动化脚本的 TypeScript 示例。它先从 Robinhood mainnet 的公开 RPC 做无 Key 读取，不需要钱包、注册或 API Key；需要 Data API 或账户时，再继续下文完整的 SIWE 流程。
+本仓库提供面向 AI Agent 与自动化脚本的 TypeScript 示例。先做公开 RPC 的无 Key 读取：默认使用 Robinhood 主网，也可通过 chain ID 选择 EVM 链。这一步不需要钱包、注册或 API Key；需要 Data API 或账户时，再继续下文完整的 SIWE 流程。
 
 ## 用 Agent Skill 查询文档
 
@@ -33,6 +33,9 @@ node src/public-read-cli.ts
 ```bash
 node src/public-read-cli.ts 56  # BSC 主网
 node src/public-read-cli.ts 1   # Ethereum 主网
+node src/public-read-cli.ts 57073  # Ink
+node src/public-read-cli.ts 130    # Unichain
+node src/public-read-cli.ts 252    # Fraxtal
 # npm 入口：npm run read:public -- 56
 ```
 
