@@ -4,10 +4,14 @@
 
 ## 用 Agent Skill 查询文档
 
-只需要文档帮助时，可在兼容 Agent Skills 的客户端安装 [BlockVectra 文档技能](skills/blockvectra-docs/SKILL.md)，无需运行 TypeScript 示例。以下固定版本的安装器需要 Node.js >= 22.20.0：
+只需要文档帮助时，可在兼容 Agent Skills 的客户端安装 [BlockVectra 文档技能](skills/blockvectra-docs/SKILL.md)，无需运行 TypeScript 示例。固定版本的安装器需要 Node.js >= 22.20.0。在项目目录中按所用客户端选择一条命令；两者均安装到当前项目，无需交互确认：
 
 ```bash
-npx --yes skills@1.7.4 add blockvectra/agent-quickstart --skill blockvectra-docs
+# Codex
+npx --yes skills@1.7.4 add blockvectra/agent-quickstart --skill blockvectra-docs --agent codex --yes
+
+# Claude Code
+npx --yes skills@1.7.4 add blockvectra/agent-quickstart --skill blockvectra-docs --agent claude-code --yes
 ```
 
 可以这样提问：“使用 blockvectra-docs，解释 Robinhood 主网公开 RPC 的接入方式，并引用原文。”技能使用已配置的 MCP 文档工具或可用的 HTTP 阅读工具，不需要 BlockVectra 账户或 Key，也不会执行 RPC 或 SIWE 开户示例。技能只提供指引，不包含模型或 MCP 服务。
