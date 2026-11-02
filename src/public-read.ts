@@ -1,5 +1,5 @@
-import { ROBINHOOD_MAINNET_ID, selectRobinhoodMainnet } from "./chain-directory.js";
-import { classifyQuantityResponse } from "./rpc-response.js";
+import { ROBINHOOD_MAINNET_ID, selectRobinhoodMainnet } from "./chain-directory.ts";
+import { classifyQuantityResponse } from "./rpc-response.ts";
 
 const DIRECTORY_URL = "https://api.blockvectra.com/v1/chains";
 const PUBLIC_RPC_URL = "https://api.blockvectra.com/v1/robinhood_mainnet/public";
