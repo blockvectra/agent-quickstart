@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   offline:
-    name: Node 24 offline regressions
+    name: Node 22 native / Node 24 offline regressions
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -22,7 +22,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Set up Node.js
+      - name: Set up minimum native Node.js 22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22.18.0'
+      - name: Check native reader without dependencies
+        run: node --test tests/public-read-native.test.mjs
+      - name: Set up Node.js 24
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24.21.0'

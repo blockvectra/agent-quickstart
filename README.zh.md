@@ -16,7 +16,7 @@ npx --yes skills@1.7.4 add blockvectra/agent-quickstart --skill blockvectra-docs
 
 ## 先做无 Key 读取
 
-有 Node.js >= 24.12 和 git 即可直接运行无 Key 读取，无需安装依赖：
+有 Node.js 22（>= 22.18）或 Node.js >= 24.12，以及 git，即可直接运行无 Key 读取，无需安装依赖：
 
 ```bash
 git clone https://github.com/blockvectra/agent-quickstart.git
@@ -24,7 +24,7 @@ cd agent-quickstart
 node src/public-read-cli.ts
 ```
 
-该入口使用 Node 的[内置 TypeScript 支持](https://nodejs.org/docs/latest-v24.x/api/typescript.html)，无需构建或 npm 安装。使用 Node.js 18–23 或较早的 Node.js 24 版本时，检出后仍可走原 npm 路径：
+该入口使用 Node 的[内置 TypeScript 支持](https://nodejs.org/docs/latest-v22.x/api/typescript.html)，无需构建或 npm 安装。使用其他 Node.js 版本时，检出后仍可走原 npm 路径：
 
 ```bash
 npm ci --ignore-scripts
