@@ -1,6 +1,6 @@
 # BlockVectra AI Agent Quickstart (TypeScript)
 
-A TypeScript example for AI agents and automated scripts. It starts with a keyless read of Robinhood mainnet over the public RPC, with no wallet, account, or API key required. When you need the Data API or an account, continue to the full SIWE onboarding flow below.
+A TypeScript example for AI agents and automated scripts. Start with a keyless public RPC read: use Robinhood mainnet by default, or select an EVM chain by its chain ID. No wallet, account, or API key is required for this step. When you need the Data API or an account, continue to the full SIWE onboarding flow below.
 
 ## Ask a documentation question with an Agent Skill
 
@@ -33,6 +33,9 @@ To select another EVM chain, pass its decimal chain ID:
 ```bash
 node src/public-read-cli.ts 56  # BSC mainnet
 node src/public-read-cli.ts 1   # Ethereum mainnet
+node src/public-read-cli.ts 57073  # Ink
+node src/public-read-cli.ts 130    # Unichain
+node src/public-read-cli.ts 252    # Fraxtal
 # With the npm entry: npm run read:public -- 56
 ```
 
