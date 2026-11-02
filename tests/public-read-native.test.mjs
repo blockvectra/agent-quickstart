@@ -7,7 +7,7 @@ import test from "node:test";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const [major, minor] = process.versions.node.split(".").map(Number);
-const nativeSupported = major > 24 || (major === 24 && minor >= 12);
+const nativeSupported = (major === 22 && minor >= 18) || major > 24 || (major === 24 && minor >= 12);
 const files = ["public-read-cli.ts", "public-read.ts", "public-read-errors.ts", "chain-directory.ts", "rpc-response.ts"];
 const fixture = `
 import assert from "node:assert/strict";

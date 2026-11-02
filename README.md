@@ -16,7 +16,7 @@ The installer collects anonymous installation telemetry by default; set `DISABLE
 
 ## Start with a keyless read
 
-With Node.js >= 24.12 and git, run the keyless reader directly without installing dependencies:
+With Node.js 22 (>= 22.18) or Node.js >= 24.12, and git, run the keyless reader directly without installing dependencies:
 
 ```bash
 git clone https://github.com/blockvectra/agent-quickstart.git
@@ -24,7 +24,7 @@ cd agent-quickstart
 node src/public-read-cli.ts
 ```
 
-Node's [built-in TypeScript support](https://nodejs.org/docs/latest-v24.x/api/typescript.html) runs this entry without a build or npm installation. For Node.js 18–23 or earlier Node.js 24 releases, use the existing npm path after cloning:
+Node's [built-in TypeScript support](https://nodejs.org/docs/latest-v22.x/api/typescript.html) runs this entry without a build or npm installation. For other Node.js versions, use the existing npm path after cloning:
 
 ```bash
 npm ci --ignore-scripts
