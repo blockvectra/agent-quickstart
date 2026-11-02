@@ -59,6 +59,29 @@ Beyond the keyless read, the full example covers:
 4. **JSON-RPC execution**: Reads the active chain directory from `GET https://api.blockvectra.com/v1/chains`, selects the unique `robinhood_mainnet` entry with numeric chain ID `4663`, verifies `eth_chainId` on that endpoint, then executes `eth_blockNumber` using the API key.
 5. **Data API query**: Calls the read-only dataset freshness endpoint (`GET /v1/data/{chain}/status/freshness`) defined in the OpenAPI specification.
 
+## Add builder context with HEY
+
+After the keyless chain read, you can fetch a separate [HEY builder card](https://heyresearch.xyz/developers/partners) to see the project's latest reported ship and its sources. With `curl` available, this example uses the Ekubo token on Robinhood Chain:
+
+```bash
+hey_card_response="$(curl --silent --show-error --max-time 15 --max-filesize 131072 \
+  --header 'x-hey-integration: blockvectra-partner-example/0.1.0' \
+  --write-out '\n%{http_code}' \
+  'https://heyresearch.xyz/api/v1/builder?chain=4663&token=0x570c5aa79c798e7a418412cc8399ae5bcce570c5')" || exit
+hey_card_status="${hey_card_response##*$'\n'}"
+hey_card_body="${hey_card_response%$'\n'*}"
+case "$hey_card_status" in
+  200) ;;
+  404) printf '%s\n' 'HEY returned 404; the separate chain read is unchanged.' >&2 ;;
+  *) printf 'HEY request returned HTTP %s\n' "$hey_card_status" >&2; exit 1 ;;
+esac
+printf '%s\n' "$hey_card_body"
+```
+
+HTTP `404` with `error: "not_found"` means HEY has no published project for that contract. Follow its returned `scan_url` if needed; this does not invalidate the separate RPC result.
+
+Keep HEY's `as_of` and activity timestamps separate from the time of your chain read. Use the returned `project_link` for the source context. When `activity_applies_to_token` is `false`, the activity is project-level; when `activity_measured` is `false`, activity is unmeasured, not zero. A block number does not verify the builder card.
+
 ---
 
 ## Architecture and Programmatic Workflow

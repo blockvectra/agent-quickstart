@@ -59,6 +59,29 @@ npm run read:public
 4. **JSON-RPC 调用**：从 `GET https://api.blockvectra.com/v1/chains` 获取当前链目录及策略，精确选择唯一且数字链 ID 为 `4663` 的 `robinhood_mainnet`，先验证该端点的 `eth_chainId`，再使用 API Key 调用 `eth_blockNumber`。
 5. **Data API 查询**：根据 OpenAPI 规范调用只读的数据新鲜度接口（`GET /v1/data/{chain}/status/freshness`）。
 
+## 用 HEY 补充构建者信息
+
+完成无 Key 链读取后，可另行获取 [HEY builder card](https://heyresearch.xyz/developers/partners)，查看项目最近报告的交付及来源。有 `curl` 时，可用下面的 Robinhood Chain Ekubo 代币示例：
+
+```bash
+hey_card_response="$(curl --silent --show-error --max-time 15 --max-filesize 131072 \
+  --header 'x-hey-integration: blockvectra-partner-example/0.1.0' \
+  --write-out '\n%{http_code}' \
+  'https://heyresearch.xyz/api/v1/builder?chain=4663&token=0x570c5aa79c798e7a418412cc8399ae5bcce570c5')" || exit
+hey_card_status="${hey_card_response##*$'\n'}"
+hey_card_body="${hey_card_response%$'\n'*}"
+case "$hey_card_status" in
+  200) ;;
+  404) printf '%s\n' 'HEY returned 404; the separate chain read is unchanged.' >&2 ;;
+  *) printf 'HEY request returned HTTP %s\n' "$hey_card_status" >&2; exit 1 ;;
+esac
+printf '%s\n' "$hey_card_body"
+```
+
+HTTP `404` 且 `error: "not_found"` 表示 HEY 尚未为该合约发布项目。如需继续查看，可使用返回的 `scan_url`；这不影响独立的 RPC 读取结果。
+
+HEY 的 `as_of`、活动时间和本次链读取时间分别保留。通过返回的 `project_link` 查看来源上下文。`activity_applies_to_token` 为 `false` 时，活动只属于项目层面；`activity_measured` 为 `false` 时表示未测量，不能当作零活动。区块号不能验证 builder card 的内容。
+
 ---
 
 ## 架构与程序化流程
