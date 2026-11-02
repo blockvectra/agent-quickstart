@@ -1,51 +1,17 @@
-import { ROBINHOOD_MAINNET_ID, selectRobinhoodMainnet } from "./chain-directory.ts";
+import { ROBINHOOD_MAINNET_ID } from "./chain-directory.ts";
+import { selectPublicReadChain, validateExpectedChainId } from "./public-read-chain.ts";
 import { classifyQuantityResponse } from "./rpc-response.ts";
 
 const DIRECTORY_URL = "https://api.blockvectra.com/v1/chains";
-const PUBLIC_RPC_URL = "https://api.blockvectra.com/v1/robinhood_mainnet/public";
 const USER_AGENT = "BlockVectraAgentQuickstart/1";
 const QA_USER_AGENT = "BlockVectraAgentQuickstart/1 BlockVectraQA/1";
 const TIMEOUT_MS = 15_000;
 const MAX_RESPONSE_BYTES = 128 * 1024;
 
 export interface PublicHead {
-  chain: "robinhood_mainnet";
+  chain: string;
   chainId: number;
   blockNumber: string;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function findRobinhoodEntry(directory: unknown): Record<string, unknown> {
-  if (!isRecord(directory) || !Array.isArray(directory.chains)) {
-    throw new Error("Invalid chain directory");
-  }
-  const entry = directory.chains.find((candidate): candidate is Record<string, unknown> =>
-    isRecord(candidate) && candidate.chain === "robinhood_mainnet");
-  if (!entry) throw new Error("Robinhood mainnet entry is missing from the chain directory");
-  return entry;
-}
-
-function validatePublicReadEntry(entry: Record<string, unknown>): void {
-  if (entry.jsonrpc !== true) {
-    throw new Error("Robinhood mainnet entry does not advertise JSON-RPC");
-  }
-  const publicEntry = entry.public;
-  if (!isRecord(publicEntry)) {
-    throw new Error("Robinhood mainnet public endpoint metadata is missing");
-  }
-  if (publicEntry.url !== PUBLIC_RPC_URL) {
-    throw new Error("Robinhood mainnet public endpoint URL is not the expected keyless endpoint");
-  }
-  const methods = publicEntry.methods;
-  if (!Array.isArray(methods) ||
-    !methods.every((method): method is string => typeof method === "string") ||
-    !methods.includes("eth_chainId") ||
-    !methods.includes("eth_blockNumber")) {
-    throw new Error("Robinhood mainnet public endpoint does not advertise the required methods");
-  }
 }
 
 function discardResponseBody(response: Response): void {
@@ -235,10 +201,11 @@ async function readJson(response: Response, signal: AbortSignal, label: string):
 async function readRpcQuantity(
   fetchImpl: typeof globalThis.fetch,
   userAgent: string,
+  rpcUrl: string,
   method: "eth_chainId" | "eth_blockNumber",
 ): Promise<string> {
   const signal = AbortSignal.timeout(TIMEOUT_MS);
-  const response = await request(fetchImpl, PUBLIC_RPC_URL, {
+  const response = await request(fetchImpl, rpcUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -261,14 +228,16 @@ async function readRpcQuantity(
 }
 
 /**
- * Read the Robinhood mainnet head through the keyless public endpoint.
+ * Read the selected chain head through its advertised keyless public endpoint.
  * The directory is validated before any RPC request, and the two RPC calls
  * run serially with no retries.
  */
 export async function readPublicHead(
   fetchImpl: typeof globalThis.fetch = globalThis.fetch,
   internalQa = false,
+  expectedChainId = ROBINHOOD_MAINNET_ID,
 ): Promise<PublicHead> {
+  validateExpectedChainId(expectedChainId);
   const userAgent = internalQa ? QA_USER_AGENT : USER_AGENT;
   const directorySignal = AbortSignal.timeout(TIMEOUT_MS);
   const directoryResponse = await request(fetchImpl, DIRECTORY_URL, {
@@ -282,21 +251,22 @@ export async function readPublicHead(
   }
   const directory = await readJson(directoryResponse, directorySignal, "Chain directory");
 
-  selectRobinhoodMainnet(directory);
-  validatePublicReadEntry(findRobinhoodEntry(directory));
+  const selected = selectPublicReadChain(directory, expectedChainId);
 
-  const chainIdQuantity = await readRpcQuantity(fetchImpl, userAgent, "eth_chainId");
+  const chainIdQuantity = await readRpcQuantity(fetchImpl, userAgent, selected.rpcUrl, "eth_chainId");
   let chainId: bigint;
   try {
     chainId = BigInt(chainIdQuantity);
   } catch {
     throw new Error("Public RPC eth_chainId was not a valid quantity");
   }
-  if (chainId !== BigInt(ROBINHOOD_MAINNET_ID)) {
-    throw new Error("Public RPC eth_chainId did not match Robinhood mainnet");
+  if (chainId !== BigInt(expectedChainId)) {
+    throw new Error(expectedChainId === ROBINHOOD_MAINNET_ID
+      ? "Public RPC eth_chainId did not match Robinhood mainnet"
+      : "Public RPC eth_chainId did not match the requested chain ID");
   }
 
-  const blockQuantity = await readRpcQuantity(fetchImpl, userAgent, "eth_blockNumber");
+  const blockQuantity = await readRpcQuantity(fetchImpl, userAgent, selected.rpcUrl, "eth_blockNumber");
   let blockNumber: string;
   try {
     blockNumber = BigInt(blockQuantity).toString(10);
@@ -305,8 +275,8 @@ export async function readPublicHead(
   }
 
   return {
-    chain: "robinhood_mainnet",
-    chainId: ROBINHOOD_MAINNET_ID,
+    chain: selected.chain,
+    chainId: expectedChainId,
     blockNumber,
   };
 }

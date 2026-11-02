@@ -75,7 +75,7 @@ test("CLI does not expose an unexpected transport exception or credentials", () 
   assert.equal(result.error, undefined);
   assert.equal(result.status, 1);
   assert.equal(result.stdout, "");
-  assert.equal(result.stderr, "Public read failed: could not read the Robinhood mainnet head.\n");
+  assert.equal(result.stderr, "Public read failed: could not read the selected chain head.\n");
 });
 
 test("timeout diagnostics identify the phase without disclosing arbitrary errors", () => {
@@ -93,7 +93,7 @@ test("other HTTP statuses retain the phase and safe status only", () => {
 });
 
 test("unrecognized and suffix-injected errors retain the generic fallback", () => {
-  const fallback = "Public read failed: could not read the Robinhood mainnet head.";
+  const fallback = "Public read failed: could not read the selected chain head.";
   for (const error of [
     SECRET, { message: SECRET }, null, new Error(SECRET),
     new Error(`Chain directory request failed (HTTP 429) ${SECRET}`),

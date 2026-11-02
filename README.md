@@ -24,6 +24,16 @@ cd agent-quickstart
 node src/public-read-cli.ts
 ```
 
+To select another EVM chain, pass its decimal chain ID:
+
+```bash
+node src/public-read-cli.ts 56  # BSC mainnet
+node src/public-read-cli.ts 1   # Ethereum mainnet
+# With the npm entry: npm run read:public -- 56
+```
+
+Omitting the argument keeps Robinhood mainnet (`4663`). The selected chain must appear exactly once in the current directory and advertise both public read methods. The reader checks the returned chain ID against your argument before fetching a block number; it stops if the chain or keyless policy is unavailable.
+
 Node's [built-in TypeScript support](https://nodejs.org/docs/latest-v22.x/api/typescript.html) runs this entry without a build or npm installation. For other Node.js versions, use the existing npm path after cloning:
 
 ```bash
@@ -31,7 +41,7 @@ npm ci --ignore-scripts
 npm run read:public
 ```
 
-The command reads the public chain directory, confirms the exact `robinhood_mainnet` public endpoint and required methods, then serially reads the chain ID and latest block number. The whole check uses at most three HTTP requests: the directory plus two JSON-RPC calls. No wallet, account sign-up, or API key is involved. If the directory stops advertising the public endpoint or the required methods, it stops before any RPC. Data API and account operations still need an API key, and the full onboarding flow below remains available.
+The command reads the public chain directory, confirms the selected chain’s exact public endpoint and required methods, then serially reads the chain ID and latest block number. The whole check uses at most three HTTP requests: the directory plus two JSON-RPC calls. No wallet, account sign-up, or API key is involved. If the directory stops advertising the public endpoint or the required methods, it stops before any RPC. Data API and account operations still need an API key, and the full onboarding flow below remains available.
 
 If a request fails with an HTTP status or times out, the command identifies the directory or RPC method involved and exits with code `1`. For HTTP `429`, wait before trying again manually. The command does not retry automatically and does not print response bodies or raw exceptions. Other failures use a generic error message. Successful runs print the same JSON result.
 
