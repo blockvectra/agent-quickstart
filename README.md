@@ -27,6 +27,8 @@ npm run read:public
 
 The command reads the public chain directory, confirms the exact `robinhood_mainnet` public endpoint and required methods, then serially reads the chain ID and latest block number. The whole check uses at most three HTTP requests: the directory plus two JSON-RPC calls. No wallet, account sign-up, or API key is involved. If the directory stops advertising the public endpoint or the required methods, it stops before any RPC. Data API and account operations still need an API key, and the full onboarding flow below remains available.
 
+If a request fails with an HTTP status or times out, the command identifies the directory or RPC method involved and exits with code `1`. For HTTP `429`, wait before trying again manually. The command does not retry automatically and does not print response bodies or raw exceptions. Other failures use a generic error message. Successful runs print the same JSON result.
+
 Beyond the keyless read, the full example covers:
 1. **Wallet identity**: Reads an Ethereum EOA private key from `AGENT_PRIVATE_KEY` or from a local `.agent-wallet.json` file. If neither is configured, generates a new wallet locally and saves it to `.agent-wallet.json` (permission `0600`) so subsequent runs reuse the same identity instead of creating new accounts.
 2. **Programmatic account sign-up**: Authenticates via Sign-In with Ethereum (SIWE / EIP-191) against `https://console-api.blockvectra.com/v1` in programmatic mode (omitting the `Origin` header). First-time wallet sign-in automatically provisions an account.
