@@ -22,6 +22,7 @@ async function readRpcQuantity(chain: string, apiKey: string, method: "eth_chain
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": apiKey },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params: [] }),
+      signal: AbortSignal.timeout(15000),
     });
     let rpcJson: unknown;
     try {
@@ -80,6 +81,7 @@ async function main() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ address: account.address, purpose: "login" }),
+        signal: AbortSignal.timeout(15000),
       });
       if (!chalRes.ok) throw new Error(`Challenge request failed: ${chalRes.status} ${await chalRes.text()}`);
       const { message } = (await chalRes.json()) as { message: string };
@@ -93,6 +95,7 @@ async function main() {
         headers: { "Content-Type": "application/json" },
         // `ref` is an optional sign-up attribution field (saved only when a new account is created).
         body: JSON.stringify({ message, signature, ref: "gh-agent-quickstart" }),
+        signal: AbortSignal.timeout(15000),
       });
       if (!loginRes.ok) throw new Error(`Login request failed: ${loginRes.status} ${await loginRes.text()}`);
       const loginData = (await loginRes.json()) as {
@@ -112,6 +115,7 @@ async function main() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ label: "agent-quickstart" }),
+        signal: AbortSignal.timeout(15000),
       });
       if (!keyRes.ok) throw new Error(`Create key failed: ${keyRes.status} ${await keyRes.text()}`);
       const created = parseCreatedApiKey(await keyRes.json(), account.address);
@@ -141,7 +145,7 @@ async function main() {
 
   // 4. Fetch chain list & call JSON-RPC
   console.log("\n[4/5] Reading chain directory from GET /v1/chains...");
-  const chainsRes = await fetch(`${API_BASE}/chains`);
+  const chainsRes = await fetch(`${API_BASE}/chains`, { signal: AbortSignal.timeout(15000) });
   if (!chainsRes.ok) throw new Error(`Fetch chains failed: ${chainsRes.status}`);
   const rhChain = selectRobinhoodMainnet(await chainsRes.json());
   console.log(`      Selected: ${rhChain.name} (${rhChain.chain}, Chain ID ${rhChain.chain_id})`);
