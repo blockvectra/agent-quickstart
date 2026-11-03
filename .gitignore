@@ -6,3 +6,4 @@ dist/
 keystore*.json
 *.key
 *.log
+.agent-key.json

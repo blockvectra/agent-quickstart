@@ -55,7 +55,7 @@ npm run read:public
 除无 Key 读取外，完整示例还涵盖：
 1. **钱包身份**：从环境变量 `AGENT_PRIVATE_KEY` 或本地 `.agent-wallet.json` 文件读取以太坊 EOA 私钥；若均未配置，则在本地生成新钱包并保存至 `.agent-wallet.json`（权限 `0600`），以便后续运行复用相同身份，避免重复开户。
 2. **程序化开户与登录**：通过以太坊签名（SIWE / EIP-191）调用 `https://console-api.blockvectra.com/v1` 进行鉴权（程序化模式，不带 `Origin` 请求头）。新钱包首次登录自动完成开户。
-3. **API Key 创建**：使用登录获得的会话令牌（`rgs_...`）调用控制台接口生成 API Key（`rgw_...`）。
+3. **API Key 创建与复用**：同一钱包优先复用 `.agent-key.json`，不存在时才创建并以 `0600` 权限保存。`BLOCKVECTRA_API_KEY` 优先，设置后不读取或更改已存 key。
 4. **JSON-RPC 调用**：从 `GET https://api.blockvectra.com/v1/chains` 获取当前链目录及策略，精确选择唯一且数字链 ID 为 `4663` 的 `robinhood_mainnet`，先验证该端点的 `eth_chainId`，再使用 API Key 调用 `eth_blockNumber`。
 5. **Data API 查询**：根据 OpenAPI 规范调用只读的数据新鲜度接口（`GET /v1/data/{chain}/status/freshness`）。
 
@@ -182,6 +182,12 @@ PR 和 `main` 更新会通过 [Offline checks](.github/workflows/offline-checks.
 
 ---
 
+### 复用创建的 API Key
+
+完整开户流程将 API Key、key ID 和绑定的钱包地址保存到 `.agent-key.json`，使用 `0600` 权限。之后在同一目录运行时复用该文件，跳过登录和创建 key；即使后续 RPC 或 Data API 失败，重跑也不会因此再创建一把。该文件已被 Git 忽略，请通过服务端或 Agent 运行环境的机密管理器读取 `api_key`，不要粘贴到聊天或客户端代码。`BLOCKVECTRA_API_KEY` 优先，设置后不读取或更改已存 key。
+
+文件损坏、权限过宽或钱包不匹配时，在登录前停止并保留原件。已过期或撤销的 key 不会自动替换；请用同一钱包管理，再明确替换本地文件或注入 `BLOCKVECTRA_API_KEY`。新 key 保存失败时，示例会尝试撤销这把新 key，仅报告 key ID 和撤销请求是否被接受。这是本地保存，不是远端 key 状态检查。
+
 ## 可选：读取钱包余额（库函数，`npm start` 不会运行）
 
 `src/wallet-balances.ts` 是按需引入的只读辅助模块，对应 `GET /v1/data/{chain}/addresses/{address}/balances`。`collectBalancePages(readPage, expectedChain, maxPages = 20)` 会沿 `next_cursor` 翻页直到该字段缺省；遇到响应结构错误、链不匹配、HTTP/读取失败、游标重复、超过页数上限、跨页重复 token，或已知的 `meta.refreshed_at` 在页间变化时整体拒绝。余额保持精确的十进制整数字符串；未知的 `symbol`/`decimals` 保持 `null`（`decimals: 0` 是有效的真实值）。`readPage` 必须在返回 JSON 之前拒绝 HTTP 错误。只能在服务端运行，API Key 不得出现在浏览器或日志中。
@@ -225,7 +231,7 @@ const result = await collectBalancePages(async (cursor) => {
 
 [3/5] Provisioning API key...
       Key ID: k_xxxxxxxxxxxx
-      API Key: rgw_9b70...
+      API Key saved to .agent-key.json (0600). Keep this file private.
 
 [4/5] Reading chain directory from GET /v1/chains...
       Selected: Robinhood Chain (robinhood_mainnet, Chain ID 4663)
@@ -239,7 +245,7 @@ const result = await collectBalancePages(async (cursor) => {
       Dataset 'blocks': block 77213095 (0s lag)
 
 === Quickstart Completed Successfully ===
-Created Key ID: k_xxxxxxxxxxxx (Revoke anytime via POST https://console-api.blockvectra.com/v1/keys/k_xxxxxxxxxxxx/revoke)
+Key ID: k_xxxxxxxxxxxx (Revoke anytime via POST https://console-api.blockvectra.com/v1/keys/k_xxxxxxxxxxxx/revoke)
 ```
 
 ---

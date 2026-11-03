@@ -1,4 +1,5 @@
 import path from "node:path";
+import { parseCreatedApiKey, readSavedApiKey, saveApiKey } from "./api-key.js";
 import { loadOrCreateWallet } from "./wallet.js";
 import { classifyQuantityResponse } from "./rpc-response.js";
 import { ROBINHOOD_MAINNET_ID, selectRobinhoodMainnet } from "./chain-directory.js";
@@ -7,6 +8,7 @@ import { readFreshness } from "./data-freshness.js";
 const CONSOLE_API = "https://console-api.blockvectra.com/v1";
 const API_BASE = "https://api.blockvectra.com/v1";
 const WALLET_FILE = path.resolve(".agent-wallet.json");
+const KEY_FILE = path.resolve(".agent-key.json");
 
 function mask(value: string): string {
   return value.length > 8 ? `${value.slice(0, 8)}...` : value;
@@ -66,54 +68,75 @@ async function main() {
 
     console.log(`      Wallet Address: ${account.address}`);
 
-    // 2. Programmatic SIWE sign-in / signup (omit Origin header)
-    console.log("\n[2/5] Requesting SIWE challenge...");
-    const chalRes = await fetch(`${CONSOLE_API}/auth/siwe/challenge`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ address: account.address, purpose: "login" }),
-    });
-    if (!chalRes.ok) throw new Error(`Challenge request failed: ${chalRes.status} ${await chalRes.text()}`);
-    const { message } = (await chalRes.json()) as { message: string };
+    const savedKey = readSavedApiKey(KEY_FILE, account.address);
+    if (savedKey) {
+      apiKey = savedKey.api_key;
+      key_id = savedKey.key_id;
+      console.log("[2-3/5] Reusing .agent-key.json; skipping sign-in and key creation.");
+    } else {
+      // 2. Programmatic SIWE sign-in / signup (omit Origin header)
+      console.log("\n[2/5] Requesting SIWE challenge...");
+      const chalRes = await fetch(`${CONSOLE_API}/auth/siwe/challenge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: account.address, purpose: "login" }),
+      });
+      if (!chalRes.ok) throw new Error(`Challenge request failed: ${chalRes.status} ${await chalRes.text()}`);
+      const { message } = (await chalRes.json()) as { message: string };
 
-    console.log("      Signing verbatim challenge message with EIP-191...");
-    const signature = await account.signMessage({ message });
+      console.log("      Signing verbatim challenge message with EIP-191...");
+      const signature = await account.signMessage({ message });
 
-    console.log("      Submitting SIWE login...");
-    const loginRes = await fetch(`${CONSOLE_API}/auth/siwe/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      // `ref` is an optional sign-up attribution field (saved only when a new account is created).
-      body: JSON.stringify({ message, signature, ref: "gh-agent-quickstart" }),
-    });
-    if (!loginRes.ok) throw new Error(`Login request failed: ${loginRes.status} ${await loginRes.text()}`);
-    const loginData = (await loginRes.json()) as {
-      session: { token: string };
-      account_created: boolean;
-    };
-    const sessionToken = loginData.session.token;
-    console.log(`      Account Created: ${loginData.account_created}`);
-    console.log(`      Session Token: ${mask(sessionToken)}`);
+      console.log("      Submitting SIWE login...");
+      const loginRes = await fetch(`${CONSOLE_API}/auth/siwe/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // `ref` is an optional sign-up attribution field (saved only when a new account is created).
+        body: JSON.stringify({ message, signature, ref: "gh-agent-quickstart" }),
+      });
+      if (!loginRes.ok) throw new Error(`Login request failed: ${loginRes.status} ${await loginRes.text()}`);
+      const loginData = (await loginRes.json()) as {
+        session: { token: string };
+        account_created: boolean;
+      };
+      const sessionToken = loginData.session.token;
+      console.log(`      Account Created: ${loginData.account_created}`);
+      console.log(`      Session Token: ${mask(sessionToken)}`);
 
-    // 3. Create an API key
-    console.log("\n[3/5] Provisioning API key...");
-    const keyRes = await fetch(`${CONSOLE_API}/keys`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${sessionToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ label: "agent-quickstart" }),
-    });
-    if (!keyRes.ok) throw new Error(`Create key failed: ${keyRes.status} ${await keyRes.text()}`);
-    const keyData = (await keyRes.json()) as {
-      key: { key_id: string; label: string; status: string };
-      api_key: string;
-    };
-    key_id = keyData.key.key_id;
-    apiKey = keyData.api_key;
-    console.log(`      Key ID: ${key_id}`);
-    console.log(`      API Key: ${mask(apiKey)}`);
+      // 3. Create an API key
+      console.log("\n[3/5] Provisioning API key...");
+      const keyRes = await fetch(`${CONSOLE_API}/keys`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${sessionToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ label: "agent-quickstart" }),
+      });
+      if (!keyRes.ok) throw new Error(`Create key failed: ${keyRes.status} ${await keyRes.text()}`);
+      const created = parseCreatedApiKey(await keyRes.json(), account.address);
+      key_id = created.key_id;
+      apiKey = created.api_key;
+      console.log(`      Key ID: ${key_id}`);
+      try {
+        saveApiKey(KEY_FILE, created);
+      } catch {
+        // Do not leave an extra active key when an exclusive local save loses a race or fails.
+        let revokeAccepted = false;
+        try {
+          const revoked = await fetch(`${CONSOLE_API}/keys/${encodeURIComponent(key_id)}/revoke`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${sessionToken}` },
+            signal: AbortSignal.timeout(15000),
+            redirect: "error",
+          });
+          revokeAccepted = revoked.ok;
+          void revoked.body?.cancel().catch(() => {});
+        } catch { /* The key ID below allows wallet-bound recovery without revealing the key. */ }
+        throw new Error(`Cannot save .agent-key.json. Created key ID: ${key_id}. Revoke request ${revokeAccepted ? "accepted" : "not confirmed; manage this key in Console"}. Existing files were preserved.`);
+      }
+      console.log("      API Key saved to .agent-key.json (0600). Keep this file private.");
+    }
   }
 
   // 4. Fetch chain list & call JSON-RPC
@@ -150,7 +173,7 @@ async function main() {
 
   console.log("\n=== Quickstart Completed Successfully ===");
   if (key_id) {
-    console.log(`Created Key ID: ${key_id} (Revoke anytime via POST https://console-api.blockvectra.com/v1/keys/${key_id}/revoke)\n`);
+    console.log(`Key ID: ${key_id} (Revoke anytime via POST https://console-api.blockvectra.com/v1/keys/${key_id}/revoke)\n`);
   }
 }
 
