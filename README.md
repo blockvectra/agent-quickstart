@@ -55,7 +55,7 @@ If a request fails with an HTTP status or times out, the command identifies the 
 Beyond the keyless read, the full example covers:
 1. **Wallet identity**: Reads an Ethereum EOA private key from `AGENT_PRIVATE_KEY` or from a local `.agent-wallet.json` file. If neither is configured, generates a new wallet locally and saves it to `.agent-wallet.json` (permission `0600`) so subsequent runs reuse the same identity instead of creating new accounts.
 2. **Programmatic account sign-up**: Authenticates via Sign-In with Ethereum (SIWE / EIP-191) against `https://console-api.blockvectra.com/v1` in programmatic mode (omitting the `Origin` header). First-time wallet sign-in automatically provisions an account.
-3. **API key provisioning**: Creates an API key (`rgw_...`) using the authenticated session token (`rgs_...`).
+3. **API key provisioning**: Reuses `.agent-key.json` for the same wallet, or creates and saves one key with private `0600` permissions. `BLOCKVECTRA_API_KEY` takes precedence without reading or changing the saved key.
 4. **JSON-RPC execution**: Reads the active chain directory from `GET https://api.blockvectra.com/v1/chains`, selects the unique `robinhood_mainnet` entry with numeric chain ID `4663`, verifies `eth_chainId` on that endpoint, then executes `eth_blockNumber` using the API key.
 5. **Data API query**: Calls the read-only dataset freshness endpoint (`GET /v1/data/{chain}/status/freshness`) defined in the OpenAPI specification.
 
@@ -182,6 +182,12 @@ Pull requests and pushes to `main` run these checks on Node.js `24.21.0` through
 
 ---
 
+### Reuse the created API key
+
+The full onboarding run saves the API key and key ID in `.agent-key.json`, bound to the wallet address. Later runs in the same directory reuse it and skip sign-in and key creation. The key survives a later RPC/Data API failure, so rerunning does not silently create another one. Keep this git-ignored file private and load `api_key` through your server or Agent runtime's secret manager; never paste it into chat or client code.
+
+A damaged, overly permissive or different-wallet file stops before sign-in and is not overwritten. An expired or revoked saved key is not automatically replaced: manage it using the same wallet, then deliberately replace the local file or inject `BLOCKVECTRA_API_KEY`. If saving a newly created key fails, the example attempts to revoke that key and reports only its ID and whether the revoke request was accepted. This is local persistence, not a remote key-status check.
+
 ## Optional: Read Wallet Balances (library, not run by `npm start`)
 
 `src/wallet-balances.ts` is an opt-in, read-only helper for `GET /v1/data/{chain}/addresses/{address}/balances`. `collectBalancePages(readPage, expectedChain, maxPages = 20)` follows `next_cursor` until it is omitted and rejects on malformed envelopes, chain mismatch, HTTP/read failures, repeated cursors, the page cap, duplicate tokens, or a changed known `meta.refreshed_at`. Balances stay exact decimal-integer strings; `symbol`/`decimals` stay `null` when unknown (`decimals: 0` is a real value). `readPage` must reject HTTP errors before returning JSON. Run it server-side only; the API key must not reach browsers or logs.
@@ -225,7 +231,7 @@ Illustrative output (addresses, keys, block heights and dataset counts vary; thi
 
 [3/5] Provisioning API key...
       Key ID: k_xxxxxxxxxxxx
-      API Key: rgw_9b70...
+      API Key saved to .agent-key.json (0600). Keep this file private.
 
 [4/5] Reading chain directory from GET /v1/chains...
       Selected: Robinhood Chain (robinhood_mainnet, Chain ID 4663)
@@ -239,7 +245,7 @@ Illustrative output (addresses, keys, block heights and dataset counts vary; thi
       Dataset 'blocks': block 77213095 (0s lag)
 
 === Quickstart Completed Successfully ===
-Created Key ID: k_xxxxxxxxxxxx (Revoke anytime via POST https://console-api.blockvectra.com/v1/keys/k_xxxxxxxxxxxx/revoke)
+Key ID: k_xxxxxxxxxxxx (Revoke anytime via POST https://console-api.blockvectra.com/v1/keys/k_xxxxxxxxxxxx/revoke)
 ```
 
 ---
