@@ -61,7 +61,7 @@ npm run read:public
 
 ## 服务端：限定私有 RPC 请求头的端点
 
-服务端 `makeRpc` 客户端支持注入 `fetcher(stringUrl, requestInit)` 时，可使用 [createHeaderScopedRpcFetch](examples/header-scoped-rpc-fetch.mjs)。请从公开链目录（`GET https://api.blockvectra.com/v1/chains`）选择私有端点，沿用原有选链；`robinhood_mainnet` 与 `eth_mainnet` 都只是示例，不是默认值。在已导入 `makeRpc` 并定义 `existingRpcOptions`（含 primary/fallback）的模块中注入：
+服务端 `makeRpc` 客户端支持注入 `fetcher(stringUrl, requestInit)` 时，可使用 [createHeaderScopedRpcFetch](examples/header-scoped-rpc-fetch.mjs)。请从公开链目录（`GET https://api.blockvectra.com/v1/chains`）选择私有端点，沿用原有选链；`robinhood_mainnet` 与 `eth_mainnet` 都只是示例，不是默认值。在已导入 `makeRpc` 的服务端模块中，保留原有 `network`（本例对应 `'robinhood'`）和 `existingRpcEnv`（含已配置的 fallback）：
 
 ```js
 import { createHeaderScopedRpcFetch } from './examples/header-scoped-rpc-fetch.mjs';
@@ -69,12 +69,15 @@ import { createHeaderScopedRpcFetch } from './examples/header-scoped-rpc-fetch.m
 const endpoint = 'https://api.blockvectra.com/v1/robinhood_mainnet';
 const fetcher = createHeaderScopedRpcFetch({
   endpoint, // Must equal your configured primary URL exactly.
-  apiKey: 'synthetic-only-replace-via-server-secret-manager',
+  apiKey: process.env.BLOCKVECTRA_API_KEY,
 });
-const rpc = makeRpc({ ...existingRpcOptions, fetcher });
+const rpc = makeRpc(network, {
+  fetcher,
+  env: { ...existingRpcEnv, RADAR_ROBINHOOD_RPC_URL: endpoint },
+});
 ```
 
-占位 key 是假的；实际值请通过服务端机密管理器注入，不要放入 URL、日志、浏览器代码或 fallback 配置。只有精确端点才收到 `x-api-key`。其他 headers、method、body 和 AbortSignal 保持透传；调用者通过 `Headers`、tuples 或 object 提供 `x-api-key` 或 `Authorization` 都会被拒绝。即使调用者指定 `follow`，重定向仍会失败；不重试、不读取正文、不包装响应、不追加 URL 参数，429 也原样返回。
+请通过服务端机密管理器提供 `BLOCKVECTRA_API_KEY`；缺 key 时构造 fetcher 即失败，不输出它。不要放入 URL、日志、浏览器代码或 fallback 配置。只有精确端点才收到 `x-api-key`。其他 headers、method、body 和 AbortSignal 保持透传；调用者通过 `Headers`、tuples 或 object 提供 `x-api-key` 或 `Authorization` 都会被拒绝。即使调用者指定 `follow`，重定向仍会失败；不重试、不读取正文、不包装响应、不追加 URL 参数，429 也原样返回。
 
 配置端点须为字面 `https://api.blockvectra.com/v1/<slug>`（小写字母、数字及分隔符 `_` 或 `-`），拒绝用户名密码、显式端口、query/fragment 和 public 后缀。key 须为非空可打印 ASCII，首尾无空白；请求前即校验，固定错误不回显 key。字符串按原文匹配，path/query/fragment 的标准化变形不会获得授权；`URL` 对象按原生标准化序列化结果取快照，无法恢复 `new URL(...)` 已消去的信息。不支持 `Request`。
 
