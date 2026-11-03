@@ -59,6 +59,30 @@ Beyond the keyless read, the full example covers:
 4. **JSON-RPC execution**: Reads the active chain directory from `GET https://api.blockvectra.com/v1/chains`, selects the unique `robinhood_mainnet` entry with numeric chain ID `4663`, verifies `eth_chainId` on that endpoint, then executes `eth_blockNumber` using the API key.
 5. **Data API query**: Calls the read-only dataset freshness endpoint (`GET /v1/data/{chain}/status/freshness`) defined in the OpenAPI specification.
 
+## Server-side: scope a private RPC header
+
+Use [createHeaderScopedRpcFetch](examples/header-scoped-rpc-fetch.mjs) with a server-side `makeRpc` client that accepts `fetcher(stringUrl, requestInit)`. Choose the private endpoint from the public chain directory (`GET https://api.blockvectra.com/v1/chains`) and keep your existing chain choice; `robinhood_mainnet` and `eth_mainnet` are examples, not defaults. In your server module that already imports `makeRpc`, keep your existing `network` (`'robinhood'` for this example) and `existingRpcEnv` (including any fallback):
+
+```js
+import { createHeaderScopedRpcFetch } from './examples/header-scoped-rpc-fetch.mjs';
+
+const endpoint = 'https://api.blockvectra.com/v1/robinhood_mainnet';
+const fetcher = createHeaderScopedRpcFetch({
+  endpoint, // Must equal your configured primary URL exactly.
+  apiKey: process.env.BLOCKVECTRA_API_KEY,
+});
+const rpc = makeRpc(network, {
+  fetcher,
+  env: { ...existingRpcEnv, RADAR_ROBINHOOD_RPC_URL: endpoint },
+});
+```
+
+Supply `BLOCKVECTRA_API_KEY` through your server's secret manager. A missing key fails when constructing the fetcher, without printing it. Never put it in URLs, logs, browser code or fallback configuration. Only the exact endpoint gets `x-api-key`. Other headers, method, body and AbortSignal survive; caller `x-api-key` or `Authorization` is rejected for `Headers`, tuples and objects. Redirects always fail, even with caller `follow`; there are no retries, body reads, response wrappers or added URL parameters, including on 429.
+
+Configuration rejects credentials, explicit ports, query/fragment and public suffixes; the endpoint must be literal `https://api.blockvectra.com/v1/<slug>` (lowercase letters/digits, `_` or `-` separators). Keys must be nonempty printable ASCII without surrounding whitespace; validation happens before requests, with fixed errors that omit the key. Strings match verbatim, so normalized path/query/fragment tricks gain no authorization. `URL` objects use a native normalized serialization snapshot; information already lost in `new URL(...)` cannot be recovered. `Request` is unsupported.
+
+This only wires headers safely on the server; it is not a generic credential scrubber, browser helper or complete SDK. Other caller credentials remain your responsibility. A custom `fetchImpl` must be trusted and honor `redirect: 'error'`. Tests use synthetic keys and loopback HTTP with test-only URL mapping, not Prod DNS/TLS. Chain capability, chain ID, usage and actual scans (including a 24-hour scan) remain unverified.
+
 ## Add builder context with HEY
 
 After the keyless chain read, you can fetch a separate [HEY builder card](https://heyresearch.xyz/developers/partners) to see the project's latest reported ship and its sources. With `curl` available, this example uses the Ekubo token on Robinhood Chain:

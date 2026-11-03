@@ -59,6 +59,30 @@ npm run read:public
 4. **JSON-RPC 调用**：从 `GET https://api.blockvectra.com/v1/chains` 获取当前链目录及策略，精确选择唯一且数字链 ID 为 `4663` 的 `robinhood_mainnet`，先验证该端点的 `eth_chainId`，再使用 API Key 调用 `eth_blockNumber`。
 5. **Data API 查询**：根据 OpenAPI 规范调用只读的数据新鲜度接口（`GET /v1/data/{chain}/status/freshness`）。
 
+## 服务端：限定私有 RPC 请求头的端点
+
+服务端 `makeRpc` 客户端支持注入 `fetcher(stringUrl, requestInit)` 时，可使用 [createHeaderScopedRpcFetch](examples/header-scoped-rpc-fetch.mjs)。请从公开链目录（`GET https://api.blockvectra.com/v1/chains`）选择私有端点，沿用原有选链；`robinhood_mainnet` 与 `eth_mainnet` 都只是示例，不是默认值。在已导入 `makeRpc` 的服务端模块中，保留原有 `network`（本例对应 `'robinhood'`）和 `existingRpcEnv`（含已配置的 fallback）：
+
+```js
+import { createHeaderScopedRpcFetch } from './examples/header-scoped-rpc-fetch.mjs';
+
+const endpoint = 'https://api.blockvectra.com/v1/robinhood_mainnet';
+const fetcher = createHeaderScopedRpcFetch({
+  endpoint, // Must equal your configured primary URL exactly.
+  apiKey: process.env.BLOCKVECTRA_API_KEY,
+});
+const rpc = makeRpc(network, {
+  fetcher,
+  env: { ...existingRpcEnv, RADAR_ROBINHOOD_RPC_URL: endpoint },
+});
+```
+
+请通过服务端机密管理器提供 `BLOCKVECTRA_API_KEY`；缺 key 时构造 fetcher 即失败，不输出它。不要放入 URL、日志、浏览器代码或 fallback 配置。只有精确端点才收到 `x-api-key`。其他 headers、method、body 和 AbortSignal 保持透传；调用者通过 `Headers`、tuples 或 object 提供 `x-api-key` 或 `Authorization` 都会被拒绝。即使调用者指定 `follow`，重定向仍会失败；不重试、不读取正文、不包装响应、不追加 URL 参数，429 也原样返回。
+
+配置端点须为字面 `https://api.blockvectra.com/v1/<slug>`（小写字母、数字及分隔符 `_` 或 `-`），拒绝用户名密码、显式端口、query/fragment 和 public 后缀。key 须为非空可打印 ASCII，首尾无空白；请求前即校验，固定错误不回显 key。字符串按原文匹配，path/query/fragment 的标准化变形不会获得授权；`URL` 对象按原生标准化序列化结果取快照，无法恢复 `new URL(...)` 已消去的信息。不支持 `Request`。
+
+该示例仅解决服务端安全 header 接线，不是通用凭据清洗器、浏览器辅助工具或完整 SDK；其他调用者凭据仍由调用者负责。自定义 `fetchImpl` 必须可信且遵守 `redirect: 'error'`。测试仅用合成 key 和本地 HTTP，fixture 的 URL 映射不验证 Prod DNS/TLS。链能力、chain ID、用量与实际扫描（含 24 小时扫描）均未验证。
+
 ## 用 HEY 补充构建者信息
 
 完成无 Key 链读取后，可另行获取 [HEY builder card](https://heyresearch.xyz/developers/partners)，查看项目最近报告的交付及来源。有 `curl` 时，可用下面的 Robinhood Chain Ekubo 代币示例：
