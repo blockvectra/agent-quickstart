@@ -41,11 +41,19 @@ for (const stalledStage of stages) {
           : stage === "freshness" ? { meta: { chain: "robinhood_mainnet" }, data: [] }
           : { jsonrpc: "2.0", id: 1, result: stage === "eth_chainId" ? "0x1237" : "0x2a" };
         response.writeHead(200, { "Content-Type": "application/json" });
-        response.end(JSON.stringify(body));
+        // A healthy prefix may exceed the old blanket 100ms test deadline.
+        if (stage === "challenge" && stalledStage !== "challenge") {
+          setTimeout(() => response.end(JSON.stringify(body)), 200);
+        } else {
+          response.end(JSON.stringify(body));
+        }
       });
       server.listen(0, "127.0.0.1");
       await once(server, "listening");
-      t.after(() => { server.closeAllConnections(); server.close(); });
+      t.after(async () => {
+        server.closeAllConnections();
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+      });
       const address = server.address();
       assert.ok(address && typeof address !== "string");
       const env = { ...process.env };
@@ -53,12 +61,21 @@ for (const stalledStage of stages) {
       delete env.BLOCKVECTRA_API_KEY;
       const child = spawn(process.execPath, ["--import", loader, "--input-type=module", "-e", `
         const timeout = AbortSignal.timeout.bind(AbortSignal);
+        const issuedSignals = [];
+        // The fresh CLI makes these seven requests serially, without retries.
+        // Keep healthy prefixes on the native 15s budget; accelerate only the stall.
         AbortSignal.timeout = (ms) => {
           if (ms !== 15000) throw new Error('unexpected request deadline');
-          return timeout(100);
+          const signal = timeout(issuedSignals.length === ${stages.indexOf(stalledStage)} ? 500 : ms);
+          issuedSignals.push(signal);
+          return signal;
         };
+        let requestIndex = 0;
         const nativeFetch = globalThis.fetch;
         globalThis.fetch = (input, init) => {
+          if (!(init?.signal instanceof AbortSignal) || init.signal !== issuedSignals[requestIndex++]) {
+            throw new Error('request must forward its production timeout signal');
+          }
           const url = new URL(String(input));
           if (!['console-api.blockvectra.com', 'api.blockvectra.com'].includes(url.hostname)) {
             throw new Error('unplanned request origin');
@@ -67,11 +84,12 @@ for (const stalledStage of stages) {
         };
         await import(${JSON.stringify(entry)});
       `], { cwd: directory, env, stdio: ["ignore", "pipe", "pipe"] });
+      t.diagnostic(`fixture child pid=${child.pid}`);
       let output = "";
       child.stdout.on("data", chunk => { output += chunk; });
       child.stderr.on("data", chunk => { output += chunk; });
       let guardKilled = false;
-      const guard = setTimeout(() => { guardKilled = true; child.kill("SIGKILL"); }, 2500);
+      const guard = setTimeout(() => { guardKilled = true; child.kill("SIGKILL"); }, 10000);
       t.after(() => { clearTimeout(guard); if (child.exitCode === null) child.kill("SIGKILL"); });
       const [code] = await once(child, "close");
       clearTimeout(guard);
