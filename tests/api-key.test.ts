@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import {spawnSync} from "node:child_process";
 import {test, type TestContext} from "node:test";
 import {readSavedApiKey, saveApiKey, parseCreatedApiKey} from "../src/api-key.js";
 
@@ -62,3 +63,32 @@ test('untrusted create responses fail locally without putting their contents in 
     assert.throws(() => parseCreatedApiKey(value, ADDRESS), {message: 'Invalid created API key response.'});
   }
 });
+
+for (const race of [false, true]) {
+  test(`a FIFO credential rejects promptly (replacement race=${race})`, {skip: process.platform === 'win32'}, (t) => {
+    const {file} = fixture(t);
+    const module = new URL('../src/api-key.ts', import.meta.url).href;
+    const loader = new URL('../node_modules/tsx/dist/loader.mjs', import.meta.url).pathname;
+    const child = spawnSync(process.execPath, ['--import', loader, '--input-type=module', '-e', `
+      import assert from 'node:assert/strict';
+      import fs from 'node:fs';
+      import {spawnSync} from 'node:child_process';
+      import {readSavedApiKey} from ${JSON.stringify(module)};
+      const file = ${JSON.stringify(file)};
+      function fifo() {
+        assert.equal(spawnSync('mkfifo', ['-m', '600', file]).status, 0);
+      }
+      if (${JSON.stringify(race)}) {
+        fs.writeFileSync(file, '{}', {mode: 0o600});
+        const original = fs.openSync;
+        fs.openSync = (name, ...args) => {
+          if (name === file) {fs.unlinkSync(file);fifo();}
+          return original(name, ...args);
+        };
+      } else fifo();
+      assert.throws(() => readSavedApiKey(file, ${JSON.stringify(ADDRESS)}), /Invalid saved API key/);
+    `], {encoding: 'utf8', timeout: 1500});
+    assert.equal(child.status, 0, child.error?.message ?? child.stderr);
+    assert.equal(child.signal, null);
+  });
+}

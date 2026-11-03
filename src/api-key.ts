@@ -30,8 +30,8 @@ export function readSavedApiKey(file: string, walletAddress: string): SavedApiKe
   let fd: number;
   try {
     // lstat also rejects links on platforms without O_NOFOLLOW.
-    if (fs.lstatSync(file).isSymbolicLink()) throw new Error(INVALID);
-    fd = fs.openSync(file, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+    if (!fs.lstatSync(file).isFile()) throw new Error(INVALID);
+    fd = fs.openSync(file, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0) | (fs.constants.O_NONBLOCK ?? 0));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
     throw new Error(INVALID);
