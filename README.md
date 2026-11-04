@@ -83,6 +83,12 @@ Configuration rejects credentials, explicit ports, query/fragment and public suf
 
 This only wires headers safely on the server; it is not a generic credential scrubber, browser helper or complete SDK. Other caller credentials remain your responsibility. A custom `fetchImpl` must be trusted and honor `redirect: 'error'`. Tests use synthetic keys and loopback HTTP with test-only URL mapping, not Prod DNS/TLS. Chain capability, chain ID, usage and actual scans (including a 24-hour scan) remain unverified.
 
+## Use BlockVectra with eRPC
+
+Already run eRPC? The [pinned configuration and offline reproduction](https://gist.github.com/gjwang/fb8d4cde5f159b6d1d54ee8ae1c10a51/e944e29fadd7b586f48f7f565c21eeeb8af4d778#file-erpc-blockvectra-yaml) pairs Robinhood mainnet (`4663`) and testnet (`46630`) with explicit upstream URLs and an `x-api-key` header. It uses ordinary eRPC upstream configuration; no BlockVectra-specific adapter is required.
+
+Provide a nonempty `BLOCKVECTRA_API_KEY` in the server environment before startup: YAML can expand a missing variable to an empty header. Keep the expanded configuration and authentication headers out of shared logs. The example was checked with eRPC 0.5.0 and local fixtures, not live RPC. Public `/public` routes have different methods and limits; they are not drop-in replacements for this keyed setup.
+
 ## Add builder context with HEY
 
 After the keyless chain read, you can fetch a separate [HEY builder card](https://heyresearch.xyz/developers/partners) to see the project's latest reported ship and its sources. With `curl` available, this example uses the Ekubo token on Robinhood Chain:

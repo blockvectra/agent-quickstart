@@ -83,6 +83,12 @@ const rpc = makeRpc(network, {
 
 该示例仅解决服务端安全 header 接线，不是通用凭据清洗器、浏览器辅助工具或完整 SDK；其他调用者凭据仍由调用者负责。自定义 `fetchImpl` 必须可信且遵守 `redirect: 'error'`。测试仅用合成 key 和本地 HTTP，fixture 的 URL 映射不验证 Prod DNS/TLS。链能力、chain ID、用量与实际扫描（含 24 小时扫描）均未验证。
 
+## 在 eRPC 中接入 BlockVectra
+
+已经使用 eRPC？这份[固定版本配置与离线复现](https://gist.github.com/gjwang/fb8d4cde5f159b6d1d54ee8ae1c10a51/e944e29fadd7b586f48f7f565c21eeeb8af4d778#file-erpc-blockvectra-yaml)为 Robinhood 主网（`4663`）和测试网（`46630`）分别配置上游 URL，通过 `x-api-key` 请求头认证。使用 eRPC 自带的上游配置即可，无需 BlockVectra 专用适配器。
+
+启动前请在服务端环境提供非空的 `BLOCKVECTRA_API_KEY`；YAML 可能把缺失变量展开为空请求头。不要把展开后的配置或认证头放进共享日志。示例使用 eRPC 0.5.0 与本地夹具校验，未验证线上 RPC。`/public` 公开入口的方法和限额不同，不能直接替换这份带 Key 配置。
+
 ## 用 HEY 补充构建者信息
 
 完成无 Key 链读取后，可另行获取 [HEY builder card](https://heyresearch.xyz/developers/partners)，查看项目最近报告的交付及来源。有 `curl` 时，可用下面的 Robinhood Chain Ekubo 代币示例：
