@@ -7,6 +7,10 @@ description: Find and explain BlockVectra documentation for RPC and indexed-data
 
 Answer from the relevant source page and cite it. No BlockVectra wallet, account, or API key is needed to read documentation.
 
+## Documentation connection
+
+For a new MCP connection, use `https://docs.blockvectra.com/mcp/docs` over Streamable HTTP. This server route exposes only `search_docs` and `read_doc` and rejects other tools; it needs no BlockVectra key. The separate `/mcp` endpoint includes RPC and account tools. Installing this skill does not configure an MCP connection; use an available HTTP reader if no connection is configured.
+
 ## Find and read the source
 
 Use documentation supplied with the task when available, preserving its date or source version. Otherwise:

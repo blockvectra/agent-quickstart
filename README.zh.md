@@ -25,10 +25,10 @@ npx --yes skills@1.7.4 add blockvectra/agent-quickstart --skill blockvectra-docs
 使用 Copilot CLI 时，先连接托管文档工具，再提出问题：
 
 ```bash
-copilot mcp add --transport http --tools search_docs,read_doc blockvectra https://docs.blockvectra.com/mcp
+copilot mcp add --transport http blockvectra-docs https://docs.blockvectra.com/mcp/docs
 ```
 
-这只启用文档搜索与阅读，不添加 BlockVectra key，也不启用 RPC、账户或交易工具。
+该服务端入口只提供 `search_docs` 和 `read_doc`，拒绝其他工具；无需 BlockVectra Key，也无需客户端另行筛选工具。
 
 安装器默认收集匿名安装统计；可设置 `DISABLE_TELEMETRY=1` 退出。详见[安装器说明](https://github.com/vercel-labs/skills#telemetry)。
 
@@ -312,7 +312,7 @@ Key ID: k_xxxxxxxxxxxx (Revoke anytime via POST https://console-api.blockvectra.
 
 ## 在编程助手中接入 MCP 服务
 
-BlockVectra 在以下地址提供基于 Streamable HTTP 协议的 Model Context Protocol (MCP) 服务：
+BlockVectra 提供两个基于 Streamable HTTP 的 MCP 入口：文档专用入口为 `https://docs.blockvectra.com/mcp/docs`；下列完整入口还包含 RPC、Data 和账户工具：
 
 ```
 https://docs.blockvectra.com/mcp
@@ -320,22 +320,22 @@ https://docs.blockvectra.com/mcp
 
 ### 1. Claude Code 配置
 
-#### 免 Key 文档与状态查询
-无需 API Key 即可检索文档、读取 Markdown、查询链参数与服务就绪状态：
+#### 免 Key 文档服务
+无需 API Key；文档专用入口只提供 `search_docs` 和 `read_doc`：
 
 ```bash
-claude mcp add --transport http blockvectra-docs https://docs.blockvectra.com/mcp
+claude mcp add --transport http blockvectra-docs https://docs.blockvectra.com/mcp/docs
 ```
 
 #### 带 Key 调用工具
 免 Key RPC 的可用方法和限额以所选链的公开策略为准。策略之外的调用、索引 Data API 和账户工具需要你自己的 API Key；带 Key 调用仍受方法和用量限制。
 
-将此条目合并到项目的 `.mcp.json`，保留其他已有服务。如果之前的添加命令已创建同名 local 条目，请移除该覆盖项或直接更新其配置；local 条目优先于项目配置：
+需要完整工具时，将以下独立的 `blockvectra` 条目合并到项目 `.mcp.json`，保留文档连接与其他已有服务：
 
 ```json
 {
   "mcpServers": {
-    "blockvectra-docs": {
+    "blockvectra": {
       "type": "http",
       "url": "https://docs.blockvectra.com/mcp",
       "headers": {
@@ -357,7 +357,7 @@ claude mcp add --transport http blockvectra-docs https://docs.blockvectra.com/mc
 {
   "mcpServers": {
     "blockvectra-docs": {
-      "url": "https://docs.blockvectra.com/mcp"
+      "url": "https://docs.blockvectra.com/mcp/docs"
     }
   }
 }
