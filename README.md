@@ -284,7 +284,6 @@ Illustrative output (addresses, keys, block heights and dataset counts vary; thi
       Signing verbatim challenge message with EIP-191...
       Submitting SIWE login...
       Account Created: true
-      Session Token: rgs_4f5b...
 
 [3/5] Provisioning API key...
       Key ID: k_xxxxxxxxxxxx
@@ -325,11 +324,25 @@ claude mcp add --transport http blockvectra-docs https://docs.blockvectra.com/mc
 ```
 
 #### Keyed MCP Tools
-To enable tools that execute on-chain queries (`rpc_call`, `data_api_get`), pass the API key in the `-H` option:
+RPC availability without a key follows the selected chain's public methods and limits. Calls outside that policy, indexed Data API and account tools require your own API key; keyed calls still have method and usage limits.
 
-```bash
-claude mcp add --transport http -H "x-api-key: $BLOCKVECTRA_API_KEY" blockvectra-docs https://docs.blockvectra.com/mcp
+Merge this entry into your project's `.mcp.json`, preserving any other servers. If the earlier add command created a local entry with the same name, remove that override or update its configuration instead; local entries take precedence over project configuration:
+
+```json
+{
+  "mcpServers": {
+    "blockvectra-docs": {
+      "type": "http",
+      "url": "https://docs.blockvectra.com/mcp",
+      "headers": {
+        "x-api-key": "${BLOCKVECTRA_API_KEY}"
+      }
+    }
+  }
+}
 ```
+
+Set `BLOCKVECTRA_API_KEY` privately before starting Claude Code. Keep the literal variable reference in the file; Claude Code [expands it in the header](https://code.claude.com/docs/en/mcp#environment-variable-expansion-in-mcpjson). Do not put the key in CLI arguments or chat.
 
 ### 2. Cursor Configuration
 

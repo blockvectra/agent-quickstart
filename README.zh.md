@@ -273,7 +273,6 @@ const result = await collectBalancePages(async (cursor) => {
       Signing verbatim challenge message with EIP-191...
       Submitting SIWE login...
       Account Created: true
-      Session Token: rgs_4f5b...
 
 [3/5] Provisioning API key...
       Key ID: k_xxxxxxxxxxxx
@@ -314,11 +313,25 @@ claude mcp add --transport http blockvectra-docs https://docs.blockvectra.com/mc
 ```
 
 #### 带 Key 调用工具
-若需使用 `rpc_call` 和 `data_api_get` 两个链上数据工具，通过 `-H` 参数传递 API Key：
+免 Key RPC 的可用方法和限额以所选链的公开策略为准。策略之外的调用、索引 Data API 和账户工具需要你自己的 API Key；带 Key 调用仍受方法和用量限制。
 
-```bash
-claude mcp add --transport http -H "x-api-key: $BLOCKVECTRA_API_KEY" blockvectra-docs https://docs.blockvectra.com/mcp
+将此条目合并到项目的 `.mcp.json`，保留其他已有服务。如果之前的添加命令已创建同名 local 条目，请移除该覆盖项或直接更新其配置；local 条目优先于项目配置：
+
+```json
+{
+  "mcpServers": {
+    "blockvectra-docs": {
+      "type": "http",
+      "url": "https://docs.blockvectra.com/mcp",
+      "headers": {
+        "x-api-key": "${BLOCKVECTRA_API_KEY}"
+      }
+    }
+  }
+}
 ```
+
+启动 Claude Code 前私密设置 `BLOCKVECTRA_API_KEY`。文件中只保留字面的变量引用，由 Claude Code [在请求头中展开](https://code.claude.com/docs/en/mcp#environment-variable-expansion-in-mcpjson)；不要将 Key 放入 CLI 参数或聊天。
 
 ### 2. Cursor 配置
 
