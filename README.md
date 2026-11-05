@@ -59,6 +59,20 @@ Beyond the keyless read, the full example covers:
 4. **JSON-RPC execution**: Reads the active chain directory from `GET https://api.blockvectra.com/v1/chains`, selects the unique `robinhood_mainnet` entry with numeric chain ID `4663`, verifies `eth_chainId` on that endpoint, then executes `eth_blockNumber` using the API key.
 5. **Data API query**: Calls the read-only dataset freshness endpoint (`GET /v1/data/{chain}/status/freshness`) defined in the OpenAPI specification.
 
+## URL-only clients: AgentOS
+
+BlockVectra already supports [JSON-RPC authentication with a key in the URL path](https://docs.blockvectra.com/en/guides/robinhood-chain/#network-information-and-endpoints). AgentOS can use it without a header-auth patch or a local proxy. Supply `BLOCKVECTRA_API_KEY` privately in the AgentOS process environment, then set:
+
+```sh
+export RPC_ROBINHOOD_URL="https://api.blockvectra.com/v1/robinhood_mainnet/${BLOCKVECTRA_API_KEY:?Set BLOCKVECTRA_API_KEY privately first}"
+```
+
+Start AgentOS from that environment using your usual command. An existing `4663` or `robinhood` entry in `[trading.rpc_urls]` takes priority: remove that override, or update it privately to the same path-key URL. AgentOS's [existing resolver](https://github.com/use-agent-os/agent-os/blob/4f6e71de2fc7e2361aefdbe97e6f6408ba8fbe0e/src/agentos/trading/chains.py#L153-L169) checks explicit overrides before `RPC_ROBINHOOD_URL` and the public default. The shell command expands the variable; TOML does not perform this shell expansion.
+
+Treat the full URL as a secret: keep it out of version control, shared logs, screenshots and browser code. Do not use shell tracing (`set -x`) while setting it. Header-capable clients can keep using `x-api-key`; existing eRPC users can use the configuration below to keep their local client URL free of credentials.
+
+The configuration was checked against the linked AgentOS resolver using a synthetic key and the published path-key contract. No live authenticated RPC, AgentOS trading or LP workflow was executed. Its LP path can also use a separate public log fallback, so this override does not mean every external call uses BlockVectra.
+
 ## Server-side: scope a private RPC header
 
 Use [createHeaderScopedRpcFetch](examples/header-scoped-rpc-fetch.mjs) with a server-side `makeRpc` client that accepts `fetcher(stringUrl, requestInit)`. Choose the private endpoint from the public chain directory (`GET https://api.blockvectra.com/v1/chains`) and keep your existing chain choice; `robinhood_mainnet` and `eth_mainnet` are examples, not defaults. In your server module that already imports `makeRpc`, keep your existing `network` (`'robinhood'` for this example) and `existingRpcEnv` (including any fallback):

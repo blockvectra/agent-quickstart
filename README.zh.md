@@ -59,6 +59,20 @@ npm run read:public
 4. **JSON-RPC 调用**：从 `GET https://api.blockvectra.com/v1/chains` 获取当前链目录及策略，精确选择唯一且数字链 ID 为 `4663` 的 `robinhood_mainnet`，先验证该端点的 `eth_chainId`，再使用 API Key 调用 `eth_blockNumber`。
 5. **Data API 查询**：根据 OpenAPI 规范调用只读的数据新鲜度接口（`GET /v1/data/{chain}/status/freshness`）。
 
+## 只接受 URL 的客户端：AgentOS
+
+BlockVectra 已支持 [JSON-RPC URL 路径带 key 鉴权](https://docs.blockvectra.com/en/guides/robinhood-chain/#network-information-and-endpoints)。AgentOS 无需修改 header 鉴权代码或运行本地代理。请先通过私密方式为 AgentOS 进程环境提供 `BLOCKVECTRA_API_KEY`，再设置：
+
+```sh
+export RPC_ROBINHOOD_URL="https://api.blockvectra.com/v1/robinhood_mainnet/${BLOCKVECTRA_API_KEY:?Set BLOCKVECTRA_API_KEY privately first}"
+```
+
+从该环境沿用平时的命令启动 AgentOS。若 `[trading.rpc_urls]` 已有 `4663` 或 `robinhood` 项，它会优先于环境变量：移除该覆盖项，或私密地改为相同的路径带 key URL。AgentOS [现有选择逻辑](https://github.com/use-agent-os/agent-os/blob/4f6e71de2fc7e2361aefdbe97e6f6408ba8fbe0e/src/agentos/trading/chains.py#L153-L169)依次读取显式覆盖、`RPC_ROBINHOOD_URL`、公开默认值。上述变量由 shell 展开，TOML 不会执行此 shell 展开。
+
+完整 URL 是机密，不要提交版本库、放进共享日志、截图或浏览器代码；设置时不要开启 shell 跟踪（`set -x`）。支持 header 的客户端仍可使用 `x-api-key`；已有 eRPC 的用户也可用下文配置，让本地客户端 URL 不含凭据。
+
+本配置仅用合成 key 核对所链 AgentOS 选择函数与公开路径鉴权合同，未执行真实带 key RPC、AgentOS 交易或 LP 工作流。其 LP 路径还可能使用独立公开日志回退，不能据此称所有外部请求都经 BlockVectra。
+
 ## 服务端：限定私有 RPC 请求头的端点
 
 服务端 `makeRpc` 客户端支持注入 `fetcher(stringUrl, requestInit)` 时，可使用 [createHeaderScopedRpcFetch](examples/header-scoped-rpc-fetch.mjs)。请从公开链目录（`GET https://api.blockvectra.com/v1/chains`）选择私有端点，沿用原有选链；`robinhood_mainnet` 与 `eth_mainnet` 都只是示例，不是默认值。在已导入 `makeRpc` 的服务端模块中，保留原有 `network`（本例对应 `'robinhood'`）和 `existingRpcEnv`（含已配置的 fallback）：
