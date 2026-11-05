@@ -4,7 +4,7 @@ A TypeScript example for AI agents and automated scripts. Start with a keyless p
 
 ## Ask a documentation question with an Agent Skill
 
-For documentation help without running the TypeScript example, install the [BlockVectra documentation skill](skills/blockvectra-docs/SKILL.md) in an Agent Skills-compatible client. The pinned installer requires Node.js >= 22.20.0. From your project directory, choose the command for your agent; each installs to the current project without confirmation prompts:
+For documentation help without running the TypeScript example, install the [BlockVectra documentation skill](skills/blockvectra-docs/SKILL.md) in an Agent Skills-compatible client. The pinned installer requires Node.js >= 22.20.0. From your project directory (your configured workspace for OpenClaw), choose the command for your agent; each installs to the current project without confirmation prompts:
 
 ```bash
 # Codex
@@ -15,6 +15,9 @@ npx --yes skills@1.7.4 add blockvectra/agent-quickstart --skill blockvectra-docs
 
 # GitHub Copilot
 npx --yes skills@1.7.4 add blockvectra/agent-quickstart --skill blockvectra-docs --agent github-copilot --yes
+
+# OpenClaw
+npx --yes skills@1.7.4 add blockvectra/agent-quickstart --skill blockvectra-docs --agent openclaw --yes
 ```
 
 Try: "Use blockvectra-docs to explain Robinhood mainnet public RPC setup and cite the source." The skill uses configured MCP documentation tools or an available HTTP reader. It needs no BlockVectra account or key and does not run RPC or the SIWE onboarding example. It contains instructions, not a bundled model or MCP server.
