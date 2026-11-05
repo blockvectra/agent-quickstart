@@ -89,6 +89,21 @@ Already run eRPC? The [pinned configuration and offline reproduction](https://gi
 
 Provide a nonempty `BLOCKVECTRA_API_KEY` in the server environment before startup: YAML can expand a missing variable to an empty header. Keep the expanded configuration and authentication headers out of shared logs. The example was checked with eRPC 0.5.0 and local fixtures, not live RPC. Public `/public` routes have different methods and limits; they are not drop-in replacements for this keyed setup.
 
+### URL-only clients: AgentOS
+
+If you already run eRPC on the same trusted host as AgentOS, use the pinned configuration above and put this override in your existing AgentOS configuration:
+
+```toml
+[trading.rpc_urls]
+"4663" = "http://127.0.0.1:4000/blockvectra/evm/4663"
+```
+
+Merge the entry into an existing `trading.rpc_urls` table rather than adding the table twice. Keep `BLOCKVECTRA_API_KEY` in the eRPC process environment; the AgentOS URL contains no credential. AgentOS's [existing URL resolver](https://github.com/use-agent-os/agent-os/blob/4f6e71de2fc7e2361aefdbe97e6f6408ba8fbe0e/src/agentos/trading/chains.py#L157-L169) accepts this override, so this setup needs no AgentOS header-auth patch. Other clients that accept an HTTP RPC URL can use the same local route.
+
+Keep the listener on `127.0.0.1`; other local processes can use it too, so this is for a trusted host, not a shared public endpoint. AgentOS and eRPC must share the host network namespace: a container's loopback does not reach the host. eRPC also makes bootstrap and polling requests; include those in your upstream usage budget.
+
+The [saved local run](https://gist.github.com/gjwang/fb8d4cde5f159b6d1d54ee8ae1c10a51/e944e29fadd7b586f48f7f565c21eeeb8af4d778#file-20261103-runtime-addendum-md) checked seven routing/header/response assertions with a fake key and exited 0. AgentOS URL selection was checked against the linked source; AgentOS trading, LP workflows and live upstream compatibility were not executed. Its LP path can also use a separate public log fallback, so this override does not mean every external call uses BlockVectra.
+
 ## Add builder context with HEY
 
 After the keyless chain read, you can fetch a separate [HEY builder card](https://heyresearch.xyz/developers/partners) to see the project's latest reported ship and its sources. With `curl` available, this example uses the Ekubo token on Robinhood Chain:

@@ -89,6 +89,21 @@ const rpc = makeRpc(network, {
 
 启动前请在服务端环境提供非空的 `BLOCKVECTRA_API_KEY`；YAML 可能把缺失变量展开为空请求头。不要把展开后的配置或认证头放进共享日志。示例使用 eRPC 0.5.0 与本地夹具校验，未验证线上 RPC。`/public` 公开入口的方法和限额不同，不能直接替换这份带 Key 配置。
 
+### 只接受 URL 的客户端：AgentOS
+
+如果 eRPC 与 AgentOS 已在同一台可信主机运行，可使用上面的固定配置，并在现有 AgentOS 配置中设置：
+
+```toml
+[trading.rpc_urls]
+"4663" = "http://127.0.0.1:4000/blockvectra/evm/4663"
+```
+
+已有 `trading.rpc_urls` 表时只合入这一项，不要重复声明表。`BLOCKVECTRA_API_KEY` 仅放在 eRPC 进程环境中，AgentOS 的 URL 不含凭据。AgentOS [现有 URL 选择逻辑](https://github.com/use-agent-os/agent-os/blob/4f6e71de2fc7e2361aefdbe97e6f6408ba8fbe0e/src/agentos/trading/chains.py#L157-L169)接受此覆盖，因此无需修改 AgentOS 的 header 鉴权代码。其他接受 HTTP RPC URL 的客户端也可使用同一本地路由。
+
+保留 `127.0.0.1` 监听；其他本机进程也能使用该入口，因此只适用于可信主机，不是共享公网端点。AgentOS 与 eRPC 必须处于同一主机网络命名空间，容器内的 loopback 不指向宿主机。eRPC 的启动探测和轮询也会请求上游，需一并计入用量预算。
+
+[已存本地实测](https://gist.github.com/gjwang/fb8d4cde5f159b6d1d54ee8ae1c10a51/e944e29fadd7b586f48f7f565c21eeeb8af4d778#file-20261103-runtime-addendum-md)使用假 key，七项路由、header 和响应断言通过，进程退出码为 0。AgentOS 的 URL 选择仅据所链源码核对，未执行 AgentOS 交易、LP 工作流或线上上游兼容验证。其 LP 路径还可能使用独立公开日志回退，不能据此称所有外部请求都经 BlockVectra。
+
 ## 用 HEY 补充构建者信息
 
 完成无 Key 链读取后，可另行获取 [HEY builder card](https://heyresearch.xyz/developers/partners)，查看项目最近报告的交付及来源。有 `curl` 时，可用下面的 Robinhood Chain Ekubo 代币示例：
