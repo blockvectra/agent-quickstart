@@ -10,10 +10,6 @@ const API_BASE = "https://api.blockvectra.com/v1";
 const WALLET_FILE = path.resolve(".agent-wallet.json");
 const KEY_FILE = path.resolve(".agent-key.json");
 
-function mask(value: string): string {
-  return value.length > 8 ? `${value.slice(0, 8)}...` : value;
-}
-
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function readRpcQuantity(chain: string, apiKey: string, method: "eth_chainId" | "eth_blockNumber") {
@@ -51,7 +47,6 @@ async function main() {
 
   if (apiKey) {
     console.log("[1-3/5] Found BLOCKVECTRA_API_KEY in environment, skipping wallet & key provisioning.\n");
-    console.log(`      API Key: ${mask(apiKey)}`);
   } else {
     const { account, source } = loadOrCreateWallet({
       walletFile: WALLET_FILE,
@@ -104,7 +99,6 @@ async function main() {
       };
       const sessionToken = loginData.session.token;
       console.log(`      Account Created: ${loginData.account_created}`);
-      console.log(`      Session Token: ${mask(sessionToken)}`);
 
       // 3. Create an API key
       console.log("\n[3/5] Provisioning API key...");
