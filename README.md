@@ -59,6 +59,20 @@ Beyond the keyless read, the full example covers:
 4. **JSON-RPC execution**: Reads the active chain directory from `GET https://api.blockvectra.com/v1/chains`, selects the unique `robinhood_mainnet` entry with numeric chain ID `4663`, verifies `eth_chainId` on that endpoint, then executes `eth_blockNumber` using the API key.
 5. **Data API query**: Calls the read-only dataset freshness endpoint (`GET /v1/data/{chain}/status/freshness`) defined in the OpenAPI specification.
 
+## URL-only clients: AgentOS
+
+BlockVectra already supports [JSON-RPC authentication with a key in the URL path](https://docs.blockvectra.com/en/guides/robinhood-chain/#network-information-and-endpoints). AgentOS can use it without a header-auth patch or a local proxy. Supply `BLOCKVECTRA_API_KEY` privately in the AgentOS process environment, then set:
+
+```sh
+export RPC_ROBINHOOD_URL="https://api.blockvectra.com/v1/robinhood_mainnet/${BLOCKVECTRA_API_KEY:?Set BLOCKVECTRA_API_KEY privately first}"
+```
+
+Start AgentOS from that environment using your usual command. An existing `4663` or `robinhood` entry in `[trading.rpc_urls]` takes priority: remove that override, or update it privately to the same path-key URL. AgentOS's [existing resolver](https://github.com/use-agent-os/agent-os/blob/4f6e71de2fc7e2361aefdbe97e6f6408ba8fbe0e/src/agentos/trading/chains.py#L153-L169) checks explicit overrides before `RPC_ROBINHOOD_URL` and the public default. The shell command expands the variable; TOML does not perform this shell expansion.
+
+Treat the full URL as a secret: keep it out of version control, shared logs, screenshots and browser code. Do not use shell tracing (`set -x`) while setting it. Header-capable clients can keep using `x-api-key`; existing eRPC users can use the configuration below to keep their local client URL free of credentials.
+
+The configuration was checked against the linked AgentOS resolver using a synthetic key and the published path-key contract. No live authenticated RPC, AgentOS trading or LP workflow was executed. Its LP path can also use a separate public log fallback, so this override does not mean every external call uses BlockVectra.
+
 ## Server-side: scope a private RPC header
 
 Use [createHeaderScopedRpcFetch](examples/header-scoped-rpc-fetch.mjs) with a server-side `makeRpc` client that accepts `fetcher(stringUrl, requestInit)`. Choose the private endpoint from the public chain directory (`GET https://api.blockvectra.com/v1/chains`) and keep your existing chain choice; `robinhood_mainnet` and `eth_mainnet` are examples, not defaults. In your server module that already imports `makeRpc`, keep your existing `network` (`'robinhood'` for this example) and `existingRpcEnv` (including any fallback):
@@ -88,21 +102,6 @@ This only wires headers safely on the server; it is not a generic credential scr
 Already run eRPC? The [pinned configuration and offline reproduction](https://gist.github.com/gjwang/fb8d4cde5f159b6d1d54ee8ae1c10a51/e944e29fadd7b586f48f7f565c21eeeb8af4d778#file-erpc-blockvectra-yaml) pairs Robinhood mainnet (`4663`) and testnet (`46630`) with explicit upstream URLs and an `x-api-key` header. It uses ordinary eRPC upstream configuration; no BlockVectra-specific adapter is required.
 
 Provide a nonempty `BLOCKVECTRA_API_KEY` in the server environment before startup: YAML can expand a missing variable to an empty header. Keep the expanded configuration and authentication headers out of shared logs. The example was checked with eRPC 0.5.0 and local fixtures, not live RPC. Public `/public` routes have different methods and limits; they are not drop-in replacements for this keyed setup.
-
-### URL-only clients: AgentOS
-
-If you already run eRPC on the same trusted host as AgentOS, use the pinned configuration above and put this override in your existing AgentOS configuration:
-
-```toml
-[trading.rpc_urls]
-"4663" = "http://127.0.0.1:4000/blockvectra/evm/4663"
-```
-
-Merge the entry into an existing `trading.rpc_urls` table rather than adding the table twice. Keep `BLOCKVECTRA_API_KEY` in the eRPC process environment; the AgentOS URL contains no credential. AgentOS's [existing URL resolver](https://github.com/use-agent-os/agent-os/blob/4f6e71de2fc7e2361aefdbe97e6f6408ba8fbe0e/src/agentos/trading/chains.py#L157-L169) accepts this override, so this setup needs no AgentOS header-auth patch. Other clients that accept an HTTP RPC URL can use the same local route.
-
-Keep the listener on `127.0.0.1`; other local processes can use it too, so this is for a trusted host, not a shared public endpoint. AgentOS and eRPC must share the host network namespace: a container's loopback does not reach the host. eRPC also makes bootstrap and polling requests; include those in your upstream usage budget.
-
-The [saved local run](https://gist.github.com/gjwang/fb8d4cde5f159b6d1d54ee8ae1c10a51/e944e29fadd7b586f48f7f565c21eeeb8af4d778#file-20261103-runtime-addendum-md) checked seven routing/header/response assertions with a fake key and exited 0. AgentOS URL selection was checked against the linked source; AgentOS trading, LP workflows and live upstream compatibility were not executed. Its LP path can also use a separate public log fallback, so this override does not mean every external call uses BlockVectra.
 
 ## Add builder context with HEY
 
