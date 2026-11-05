@@ -47,6 +47,7 @@ node src/public-read-cli.ts 1   # Ethereum mainnet
 node src/public-read-cli.ts 57073  # Ink
 node src/public-read-cli.ts 130    # Unichain
 node src/public-read-cli.ts 252    # Fraxtal
+node src/public-read-cli.ts 747474 # Katana
 # With the npm entry: npm run read:public -- 56
 ```
 
