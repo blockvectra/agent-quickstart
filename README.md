@@ -4,7 +4,7 @@ A TypeScript example for AI agents and automated scripts. Start with a keyless p
 
 ## Ask a documentation question with an Agent Skill
 
-For documentation help without running the TypeScript example, install the [BlockVectra documentation skill](skills/blockvectra-docs/SKILL.md) in an Agent Skills-compatible client. The pinned installer requires Node.js >= 22.20.0. From your project directory, choose the command for your agent; both install to the current project without confirmation prompts:
+For documentation help without running the TypeScript example, install the [BlockVectra documentation skill](skills/blockvectra-docs/SKILL.md) in an Agent Skills-compatible client. The pinned installer requires Node.js >= 22.20.0. From your project directory, choose the command for your agent; each installs to the current project without confirmation prompts:
 
 ```bash
 # Codex
@@ -12,9 +12,20 @@ npx --yes skills@1.7.4 add blockvectra/agent-quickstart --skill blockvectra-docs
 
 # Claude Code
 npx --yes skills@1.7.4 add blockvectra/agent-quickstart --skill blockvectra-docs --agent claude-code --yes
+
+# GitHub Copilot
+npx --yes skills@1.7.4 add blockvectra/agent-quickstart --skill blockvectra-docs --agent github-copilot --yes
 ```
 
 Try: "Use blockvectra-docs to explain Robinhood mainnet public RPC setup and cite the source." The skill uses configured MCP documentation tools or an available HTTP reader. It needs no BlockVectra account or key and does not run RPC or the SIWE onboarding example. It contains instructions, not a bundled model or MCP server.
+
+For Copilot CLI, connect the hosted documentation tools before asking the question:
+
+```bash
+copilot mcp add --transport http --tools search_docs,read_doc blockvectra https://docs.blockvectra.com/mcp
+```
+
+This enables only documentation search and reading. It does not add a BlockVectra key or enable RPC, account, or transaction tools.
 
 The installer collects anonymous installation telemetry by default; set `DISABLE_TELEMETRY=1` to opt out. See the [installer documentation](https://github.com/vercel-labs/skills#telemetry).
 
