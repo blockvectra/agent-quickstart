@@ -25,10 +25,10 @@ Try: "Use blockvectra-docs to explain Robinhood mainnet public RPC setup and cit
 For Copilot CLI, connect the hosted documentation tools before asking the question:
 
 ```bash
-copilot mcp add --transport http --tools search_docs,read_doc blockvectra https://docs.blockvectra.com/mcp
+copilot mcp add --transport http blockvectra-docs https://docs.blockvectra.com/mcp/docs
 ```
 
-This enables only documentation search and reading. It does not add a BlockVectra key or enable RPC, account, or transaction tools.
+This server route exposes only `search_docs` and `read_doc` and rejects other tools. No BlockVectra key or client-side tool filter is needed.
 
 The installer collects anonymous installation telemetry by default; set `DISABLE_TELEMETRY=1` to opt out. See the [installer documentation](https://github.com/vercel-labs/skills#telemetry).
 
@@ -312,7 +312,7 @@ Key ID: k_xxxxxxxxxxxx (Revoke anytime via POST https://console-api.blockvectra.
 
 ## Connecting Coding Assistants via MCP
 
-BlockVectra exposes a Model Context Protocol (MCP) server over Streamable HTTP at:
+BlockVectra provides two Streamable HTTP MCP endpoints. Use `https://docs.blockvectra.com/mcp/docs` for documentation only; the full endpoint below also includes RPC, Data and account tools:
 
 ```
 https://docs.blockvectra.com/mcp
@@ -321,21 +321,21 @@ https://docs.blockvectra.com/mcp
 ### 1. Claude Code Configuration
 
 #### Keyless Documentation MCP
-Provides read-only access to documentation, search, chain parameters, service status, and plan details without an API key:
+The documentation-only endpoint exposes `search_docs` and `read_doc` without an API key:
 
 ```bash
-claude mcp add --transport http blockvectra-docs https://docs.blockvectra.com/mcp
+claude mcp add --transport http blockvectra-docs https://docs.blockvectra.com/mcp/docs
 ```
 
 #### Keyed MCP Tools
 RPC availability without a key follows the selected chain's public methods and limits. Calls outside that policy, indexed Data API and account tools require your own API key; keyed calls still have method and usage limits.
 
-Merge this entry into your project's `.mcp.json`, preserving any other servers. If the earlier add command created a local entry with the same name, remove that override or update its configuration instead; local entries take precedence over project configuration:
+For the full tools, merge this separate `blockvectra` entry into your project's `.mcp.json`, preserving the documentation connection and any other servers:
 
 ```json
 {
   "mcpServers": {
-    "blockvectra-docs": {
+    "blockvectra": {
       "type": "http",
       "url": "https://docs.blockvectra.com/mcp",
       "headers": {
@@ -357,7 +357,7 @@ Add the server to `.cursor/mcp.json` or through Cursor Settings:
 {
   "mcpServers": {
     "blockvectra-docs": {
-      "url": "https://docs.blockvectra.com/mcp"
+      "url": "https://docs.blockvectra.com/mcp/docs"
     }
   }
 }
