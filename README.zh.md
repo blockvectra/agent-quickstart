@@ -1,6 +1,8 @@
-# BlockVectra AI Agent 快速上手（TypeScript）
+# BlockVectra AI Agent 快速上手
 
-本仓库提供面向 AI Agent 与自动化脚本的 TypeScript 示例。先做公开 RPC 的无 Key 读取：默认使用 Robinhood 主网，也可通过 chain ID 选择 EVM 链。这一步不需要钱包、注册或 API Key；需要 Data API 或账户时，再继续下文完整的 SIWE 流程。
+本仓库提供面向 AI Agent 与自动化脚本的 TypeScript 和 Python 示例。先做公开 RPC 的无 Key 读取：默认使用 Robinhood 主网，也可通过 chain ID 选择 EVM 链。这一步不需要钱包、注册或 API Key；需要 Data API 或账户时，再继续下文完整的 SIWE 流程。
+
+克隆仓库后，Agent 可先读 [AGENTS.md](AGENTS.md)，按任务选择文档查询、公开读取或账户示例。
 
 ## 用 Agent Skill 查询文档
 
