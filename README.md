@@ -337,9 +337,11 @@ Python 3.11+ can connect directly with the [official MCP Python SDK](https://git
 
 ```bash
 uv run examples/mcp_docs.py
+uv run examples/mcp_docs.py --query "Robinhood mainnet RPC"
+uv run examples/mcp_docs.py --query "Robinhood 主网 RPC" --lang zh
 ```
 
-The example pins `mcp==2.3.0` in its script metadata, lists the two documentation tools, then reads the English `quickstart` page. It prints JSON containing the tool names, page path, language and complete Markdown text, so an agent can consume the result. It uses the documentation-only endpoint: no BlockVectra key, wallet, model API or chain RPC is involved. Errors exit non-zero; the example has a 40-second overall deadline. Dependency installation occurs before that deadline.
+The example pins `mcp==2.3.0` in its script metadata, lists the two documentation tools, then reads the English `quickstart` page by default. With `--query`, it searches by keyword and reads only the first matching document in the selected `--lang`; no matches cause an error instead of silently reading `quickstart`. Without `--query`, `--lang` selects the language of `quickstart`. It prints JSON containing the tool names, page path, language and complete Markdown text, so an agent can consume the result. It uses the documentation-only endpoint: no BlockVectra key, wallet, model API or chain RPC is involved. Errors exit non-zero; the example has a 40-second overall deadline. Dependency installation occurs before that deadline.
 
 The separate standard-library RPC example above still needs no third-party Python packages.
 
