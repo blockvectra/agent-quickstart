@@ -67,6 +67,19 @@ The command reads the public chain directory, confirms the selected chain’s ex
 
 If a request fails with an HTTP status or times out, the command identifies the directory or RPC method involved and exits with code `1`. For HTTP `429`, wait before trying again manually. The command does not retry automatically and does not print response bodies or raw exceptions. Other failures use a generic error message. Successful runs print the same JSON result.
 
+### Python standard-library entry
+
+Prefer Python? Python 3.10 or newer can run the same keyless identity check with no Node.js, npm, third-party packages, wallet, or API key:
+
+```bash
+git clone https://github.com/blockvectra/agent-quickstart.git
+cd agent-quickstart
+python3 examples/public_chain.py
+python3 examples/public_chain.py 56  # Select a chain from the live directory
+```
+
+The script makes at most two serial HTTP requests: it selects the chain from the public directory, then verifies `eth_chainId` against that selection. It checks chain identity, not the latest block or method coverage. It never retries automatically. Each socket operation has a 15-second timeout; this is a socket timeout, not a hard deadline for DNS or the full request.
+
 Beyond the keyless read, the full example covers:
 1. **Wallet identity**: Reads an Ethereum EOA private key from `AGENT_PRIVATE_KEY` or from a local `.agent-wallet.json` file. If neither is configured, generates a new wallet locally and saves it to `.agent-wallet.json` (permission `0600`) so subsequent runs reuse the same identity instead of creating new accounts.
 2. **Programmatic account sign-up**: Authenticates via Sign-In with Ethereum (SIWE / EIP-191) against `https://console-api.blockvectra.com/v1` in programmatic mode (omitting the `Origin` header). First-time wallet sign-in automatically provisions an account.

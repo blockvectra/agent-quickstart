@@ -67,6 +67,19 @@ npm run read:public
 
 请求返回 HTTP 错误状态或超时时，命令会指出出错的目录请求或 RPC 方法，并以退出码 `1` 结束。遇到 HTTP `429` 时，请等待后再手动重试。命令不会自动重试，也不会输出响应正文或原始异常；其他失败仍使用通用错误提示。成功时继续输出相同的 JSON 结果。
 
+### Python 标准库入口
+
+也可以使用 Python 3.10 或更高版本运行无 Key 链身份校验，无需 Node.js、npm、第三方包、钱包或 API Key：
+
+```bash
+git clone https://github.com/blockvectra/agent-quickstart.git
+cd agent-quickstart
+python3 examples/public_chain.py
+python3 examples/public_chain.py 56  # 从实时目录选择链
+```
+
+脚本最多串行发送两次 HTTP 请求：先从公开目录选择链，再核对 `eth_chainId` 是否与所选链一致。它验证的是链身份，不读取最新区块，也不验证方法覆盖情况。失败时不会自动重试。每次 socket 操作的超时为 15 秒；这不是 DNS 或整个请求流程的硬截止时间。
+
 除无 Key 读取外，完整示例还涵盖：
 1. **钱包身份**：从环境变量 `AGENT_PRIVATE_KEY` 或本地 `.agent-wallet.json` 文件读取以太坊 EOA 私钥；若均未配置，则在本地生成新钱包并保存至 `.agent-wallet.json`（权限 `0600`），以便后续运行复用相同身份，避免重复开户。
 2. **程序化开户与登录**：通过以太坊签名（SIWE / EIP-191）调用 `https://console-api.blockvectra.com/v1` 进行鉴权（程序化模式，不带 `Origin` 请求头）。新钱包首次登录自动完成开户。
