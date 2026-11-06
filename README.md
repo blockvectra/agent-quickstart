@@ -1,6 +1,8 @@
-# BlockVectra AI Agent Quickstart (TypeScript)
+# BlockVectra AI Agent Quickstart
 
-A TypeScript example for AI agents and automated scripts. Start with a keyless public RPC read: use Robinhood mainnet by default, or select an EVM chain by its chain ID. No wallet, account, or API key is required for this step. When you need the Data API or an account, continue to the full SIWE onboarding flow below.
+TypeScript and Python examples for AI agents and automated scripts. Start with a keyless public RPC read: use Robinhood mainnet by default, or select an EVM chain by its chain ID. No wallet, account, or API key is required for this step. When you need the Data API or an account, continue to the full SIWE onboarding flow below.
+
+Agents working from a clone can start with [AGENTS.md](AGENTS.md) to choose documentation, public-read or account examples.
 
 ## Ask a documentation question with an Agent Skill
 
