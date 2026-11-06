@@ -331,6 +331,18 @@ BlockVectra provides two Streamable HTTP MCP endpoints. Use `https://docs.blockv
 https://docs.blockvectra.com/mcp
 ```
 
+### Read documentation from a Python agent
+
+Python 3.11+ can connect directly with the [official MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk). With [uv](https://docs.astral.sh/uv/) installed, run this from the cloned repository:
+
+```bash
+uv run examples/mcp_docs.py
+```
+
+The example pins `mcp==2.3.0` in its script metadata, lists the two documentation tools, then reads the English `quickstart` page. It prints JSON containing the tool names, page path, language and complete Markdown text, so an agent can consume the result. It uses the documentation-only endpoint: no BlockVectra key, wallet, model API or chain RPC is involved. Errors exit non-zero; the example has a 40-second overall deadline. Dependency installation occurs before that deadline.
+
+The separate standard-library RPC example above still needs no third-party Python packages.
+
 ### 1. Claude Code Configuration
 
 #### Keyless Documentation MCP

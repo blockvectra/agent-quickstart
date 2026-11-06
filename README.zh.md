@@ -331,6 +331,18 @@ BlockVectra 提供两个基于 Streamable HTTP 的 MCP 入口：文档专用入�
 https://docs.blockvectra.com/mcp
 ```
 
+### 从 Python Agent 读取文档
+
+Python 3.11+ 可通过[官方 MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)直接连接。安装 [uv](https://docs.astral.sh/uv/) 后，在克隆的仓库中执行：
+
+```bash
+uv run examples/mcp_docs.py
+```
+
+示例在脚本元数据中固定 `mcp==2.3.0`，先列出两个文档工具，再读取英文 `quickstart` 页。输出 JSON 包含工具名、页面路径、语言和完整 Markdown，Agent 可直接消费。它只连接文档专用入口，不需要 BlockVectra key、钱包或模型 API，也不调用链上 RPC。出错时非零退出；示例运行总时限为 40 秒，依赖安装不包含在该时限内。
+
+前面的独立标准库 RPC 示例仍无需第三方 Python 包。
+
 ### 1. Claude Code 配置
 
 #### 免 Key 文档服务
