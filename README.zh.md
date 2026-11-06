@@ -337,9 +337,11 @@ Python 3.11+ 可通过[官方 MCP Python SDK](https://github.com/modelcontextpro
 
 ```bash
 uv run examples/mcp_docs.py
+uv run examples/mcp_docs.py --query "Robinhood 主网 RPC"
+uv run examples/mcp_docs.py --query "Robinhood 主网 RPC" --lang zh
 ```
 
-示例在脚本元数据中固定 `mcp==2.3.0`，先列出两个文档工具，再读取英文 `quickstart` 页。输出 JSON 包含工具名、页面路径、语言和完整 Markdown，Agent 可直接消费。它只连接文档专用入口，不需要 BlockVectra key、钱包或模型 API，也不调用链上 RPC。出错时非零退出；示例运行总时限为 40 秒，依赖安装不包含在该时限内。
+示例在脚本元数据中固定 `mcp==2.3.0`，先列出两个文档工具，默认再读取英文 `quickstart` 页。传入 `--query` 时，先按关键词检索，再读取所选 `--lang` 的首条匹配文档；无匹配时报错，不会悄悄改读 `quickstart`。不传 `--query` 时，`--lang` 可选择 `quickstart` 的语言。输出 JSON 包含工具名、页面路径、语言和完整 Markdown，Agent 可直接消费。它只连接文档专用入口，不需要 BlockVectra key、钱包或模型 API，也不调用链上 RPC。出错时非零退出；示例运行总时限为 40 秒，依赖安装不包含在该时限内。
 
 前面的独立标准库 RPC 示例仍无需第三方 Python 包。
 
