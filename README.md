@@ -380,6 +380,18 @@ The example pins `mcp==2.3.0` in its script metadata, lists the two documentatio
 
 The separate standard-library RPC example above still needs no third-party Python packages.
 
+### Read the same page with LangChain
+
+For LangChain tools, use [examples/langchain_docs.py](examples/langchain_docs.py). With Python 3.11+ and uv, run from the cloned repository:
+
+```bash
+LANGSMITH_TRACING=false uv run examples/langchain_docs.py
+```
+
+The script declares `langchain[mcp]==1.4.9`, `fastmcp==4.1.6` and `mcp==2.3.0` in inline metadata; uv manages its environment separately from project dependencies. It uses the current `langchain.mcp.MCPAdapter` API, which is **beta**, rather than the deprecated adapters package. See the [LangChain migration guide](https://docs.langchain.com/oss/python/migrate/langchain-mcp-adapters).
+
+It verifies that only `search_docs` and `read_doc` are exposed, searches for English `quickstart`, then reads that page through LangChain tools. JSON output contains the protocol version, tool names and both tool messages with the document text. No LLM, model API key, BlockVectra key, wallet or chain RPC is needed. The command disables LangSmith tracing. Operation timeouts are 15 seconds, with a 60-second cooperative overall timeout; dependency installation happens before those timeouts. The existing call logic was checked with the pinned versions; this does not verify a model-driven agent workflow.
+
 ### 1. Claude Code Configuration
 
 #### Keyless Documentation MCP
