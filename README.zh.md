@@ -80,6 +80,14 @@ python3 examples/public_chain.py
 python3 examples/public_chain.py 56  # 从实时目录选择链
 ```
 
+已安装 [uv](https://docs.astral.sh/uv/) 时，可以不克隆仓库，直接运行固定源码版本的脚本。以下命令选择 Mode 主网：
+
+```bash
+uv run --no-project --script --python 3.11 https://raw.githubusercontent.com/blockvectra/agent-quickstart/0df68765d6706a4df88aee469dfb4fd07beeef89/examples/public_chain.py 34443
+```
+
+校验成功时输出 `{"chain":"mode_mainnet","chainId":34443}`。将末尾参数改为实时目录中的其他 chain ID 即可换链，省略则选择 Robinhood 主网。uv 会下载脚本，必要时准备 Python 3.11；脚本本身只使用 Python 标准库。
+
 脚本最多串行发送两次 HTTP 请求：先从公开目录选择链，再核对 `eth_chainId` 是否与所选链一致。它验证的是链身份，不读取最新区块，也不验证方法覆盖情况。失败时不会自动重试。每次 socket 操作的超时为 15 秒；这不是 DNS 或整个请求流程的硬截止时间。
 
 ### 通过 evmchains 发现公开端点
