@@ -4,6 +4,20 @@ TypeScript and Python examples for AI agents and automated scripts. Start with a
 
 Agents working from a clone can start with [AGENTS.md](AGENTS.md) to choose documentation, public-read or account examples.
 
+## Check a chain without cloning
+
+With [uv](https://docs.astral.sh/uv/) installed, you can run the pinned script without cloning. This command selects Mode mainnet:
+
+```bash
+uv run --no-project --script --python 3.11 https://raw.githubusercontent.com/blockvectra/agent-quickstart/0df68765d6706a4df88aee469dfb4fd07beeef89/examples/public_chain.py 34443
+```
+
+A successful check prints `{"chain":"mode_mainnet","chainId":34443}`. Replace the final argument with another chain ID from the live directory, or omit it for Robinhood mainnet. uv downloads the script and may provision Python 3.11 if needed; the script itself uses only the Python standard library.
+
+The script makes at most two serial HTTP requests: it selects the chain from the public directory, then verifies `eth_chainId` against that selection. It checks chain identity, not the latest block or method coverage. It never retries automatically. Each socket operation has a 15-second timeout; this is a socket timeout, not a hard deadline for DNS or the full request.
+
+Prefer a local Python installation? Use the [standard-library entry](#python-standard-library-entry) below. To also read the latest block number, use the [TypeScript reader](#start-with-a-keyless-read).
+
 ## Ask a documentation question with an Agent Skill
 
 For documentation help without running the TypeScript example, install the [BlockVectra documentation skill](skills/blockvectra-docs/SKILL.md) in an Agent Skills-compatible client. The pinned installer requires Node.js >= 22.20.0. From your project directory (your configured workspace for OpenClaw), choose the command for your agent; each installs to the current project without confirmation prompts:
@@ -79,16 +93,6 @@ cd agent-quickstart
 python3 examples/public_chain.py
 python3 examples/public_chain.py 56  # Select a chain from the live directory
 ```
-
-With [uv](https://docs.astral.sh/uv/) installed, you can run the pinned script without cloning. This command selects Mode mainnet:
-
-```bash
-uv run --no-project --script --python 3.11 https://raw.githubusercontent.com/blockvectra/agent-quickstart/0df68765d6706a4df88aee469dfb4fd07beeef89/examples/public_chain.py 34443
-```
-
-A successful check prints `{"chain":"mode_mainnet","chainId":34443}`. Replace the final argument with another chain ID from the live directory, or omit it for Robinhood mainnet. uv downloads the script and may provision Python 3.11 if needed; the script itself uses only the Python standard library.
-
-The script makes at most two serial HTTP requests: it selects the chain from the public directory, then verifies `eth_chainId` against that selection. It checks chain identity, not the latest block or method coverage. It never retries automatically. Each socket operation has a 15-second timeout; this is a socket timeout, not a hard deadline for DNS or the full request.
 
 ### Discover public endpoints with evmchains
 

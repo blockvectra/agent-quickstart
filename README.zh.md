@@ -4,6 +4,20 @@
 
 克隆仓库后，Agent 可先读 [AGENTS.md](AGENTS.md)，按任务选择文档查询、公开读取或账户示例。
 
+## 不克隆仓库，先校验链身份
+
+已安装 [uv](https://docs.astral.sh/uv/) 时，可以不克隆仓库，直接运行固定源码版本的脚本。以下命令选择 Mode 主网：
+
+```bash
+uv run --no-project --script --python 3.11 https://raw.githubusercontent.com/blockvectra/agent-quickstart/0df68765d6706a4df88aee469dfb4fd07beeef89/examples/public_chain.py 34443
+```
+
+校验成功时输出 `{"chain":"mode_mainnet","chainId":34443}`。将末尾参数改为实时目录中的其他 chain ID 即可换链，省略则选择 Robinhood 主网。uv 会下载脚本，必要时准备 Python 3.11；脚本本身只使用 Python 标准库。
+
+脚本最多串行发送两次 HTTP 请求：先从公开目录选择链，再核对 `eth_chainId` 是否与所选链一致。它验证的是链身份，不读取最新区块，也不验证方法覆盖情况。失败时不会自动重试。每次 socket 操作的超时为 15 秒；这不是 DNS 或整个请求流程的硬截止时间。
+
+使用本机 Python 时，可看下方[标准库入口](#python-标准库入口)；还需要读取最新区块号时，可使用 [TypeScript 读取器](#先做无-key-读取)。
+
 ## 用 Agent Skill 查询文档
 
 只需要文档帮助时，可在兼容 Agent Skills 的客户端安装 [BlockVectra 文档技能](skills/blockvectra-docs/SKILL.md)，无需运行 TypeScript 示例。固定版本的安装器需要 Node.js >= 22.20.0。在项目目录（OpenClaw 请使用已配置的工作区）中按所用客户端选择一条命令；各命令均安装到当前目录，无需交互确认：
@@ -79,16 +93,6 @@ cd agent-quickstart
 python3 examples/public_chain.py
 python3 examples/public_chain.py 56  # 从实时目录选择链
 ```
-
-已安装 [uv](https://docs.astral.sh/uv/) 时，可以不克隆仓库，直接运行固定源码版本的脚本。以下命令选择 Mode 主网：
-
-```bash
-uv run --no-project --script --python 3.11 https://raw.githubusercontent.com/blockvectra/agent-quickstart/0df68765d6706a4df88aee469dfb4fd07beeef89/examples/public_chain.py 34443
-```
-
-校验成功时输出 `{"chain":"mode_mainnet","chainId":34443}`。将末尾参数改为实时目录中的其他 chain ID 即可换链，省略则选择 Robinhood 主网。uv 会下载脚本，必要时准备 Python 3.11；脚本本身只使用 Python 标准库。
-
-脚本最多串行发送两次 HTTP 请求：先从公开目录选择链，再核对 `eth_chainId` 是否与所选链一致。它验证的是链身份，不读取最新区块，也不验证方法覆盖情况。失败时不会自动重试。每次 socket 操作的超时为 15 秒；这不是 DNS 或整个请求流程的硬截止时间。
 
 ### 通过 evmchains 发现公开端点
 
