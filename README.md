@@ -108,6 +108,20 @@ Beyond the keyless read, the full example covers:
 4. **JSON-RPC execution**: Reads the active chain directory from `GET https://api.blockvectra.com/v1/chains`, selects the unique `robinhood_mainnet` entry with numeric chain ID `4663`, verifies `eth_chainId` on that endpoint, then executes `eth_blockNumber` using the API key.
 5. **Data API query**: Calls the read-only dataset freshness endpoint (`GET /v1/data/{chain}/status/freshness`) defined in the OpenAPI specification.
 
+## Check a saved BSC receipt and its logs
+
+For a concrete event check, start with the [pinned BSC receipt/log sample](https://gist.github.com/gjwang/5a8f80f5e441a5701e2e01ae73f187bf/0f680ce849c78375537fce5ed1ce9e447fe2f341). Download its linked ZIP, extract it, and run with Node.js 22+:
+
+```sh
+node verify-sample.mjs observed-sample.json
+```
+
+No npm installation, account or key is needed. After the download, the checker runs offline. Expected output: `PASS 1 receipt event matched among 4 returned logs`.
+
+The saved observation is from **2026-10-25, 13:26:17–13:26:21 UTC**, BSC mainnet (`56`), block `129476271`. It compares one receipt event with the fixed-block logs across eight fields. It checks consistency in that saved observation, not current availability, independent canonicality or complete history.
+
+The same bundle includes `bsc-compare-provider.mjs` for an optional comparison using your own BSC endpoint. Follow its private environment setup; it makes at most three serial RPC requests with no retries or broadcasts and may consume provider quota. These diagnostic requests carry `BlockVectraQA/1` and are separate from customer traffic. The comparison client was tested with synthetic transport; those tests are separate from the original saved live responses.
+
 ## URL-only clients: AgentOS
 
 BlockVectra already supports [JSON-RPC authentication with a key in the URL path](https://docs.blockvectra.com/en/guides/robinhood-chain/#network-information-and-endpoints). AgentOS can use it without a header-auth patch or a local proxy. Supply `BLOCKVECTRA_API_KEY` privately in the AgentOS process environment, then set:

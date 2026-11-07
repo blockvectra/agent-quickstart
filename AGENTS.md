@@ -8,6 +8,7 @@ Choose the entry that matches the requested task before installing dependencies 
 | Read documentation from Python through MCP | [Python MCP example](examples/mcp_docs.py) and the README section “Read documentation from a Python agent”; `--query` searches before reading in the selected language. |
 | Check a chain's identity with Python | [Standard-library public reader](examples/public_chain.py) and the README section “Python standard-library entry”. |
 | Check chain identity and read the latest block number | [Public TypeScript reader](src/public-read-cli.ts) and the README section “Start with a keyless read”. |
+| Inspect a saved BSC receipt and fixed-block logs offline | [Pinned BSC event sample](https://gist.github.com/gjwang/5a8f80f5e441a5701e2e01ae73f187bf/0f680ce849c78375537fce5ed1ce9e447fe2f341) and the README section “Check a saved BSC receipt and its logs”; Node.js 22+, no account or key. |
 | Create or reuse an account/key, then call Data API | [Full onboarding example](src/index.ts); read the wallet, SIWE and key-provisioning steps in the README first. |
 
 Use [README.md](README.md) or [README.zh.md](README.zh.md) for prerequisites, commands and each example's request limits. The documentation skill owns the documentation-reading instructions; follow its source and citation rules rather than treating this routing table as API documentation.
