@@ -82,6 +82,25 @@ python3 examples/public_chain.py 56  # Select a chain from the live directory
 
 The script makes at most two serial HTTP requests: it selects the chain from the public directory, then verifies `eth_chainId` against that selection. It checks chain identity, not the latest block or method coverage. It never retries automatically. Each socket operation has a 15-second timeout; this is a socket timeout, not a hard deadline for DNS or the full request.
 
+### Discover public endpoints with evmchains
+
+If your Python project uses [ApeWorX evmchains](https://github.com/ApeWorX/evmchains), its published [0.1.10 package](https://pypi.org/project/evmchains/0.1.10/) already lists BlockVectra public RPCs for Robinhood mainnet and testnet. You can select them from its exported metadata without adding a provider adapter. For a reproducible metadata check, use `evmchains==0.1.10` in your project's existing environment:
+
+```python
+from evmchains import PUBLIC_CHAIN_META
+
+for network, expected_id, endpoint in (
+    ("mainnet", 4663, "https://api.blockvectra.com/v1/robinhood_mainnet/public"),
+    ("testnet", 46630, "https://api.blockvectra.com/v1/robinhood_testnet/public"),
+):
+    chain = PUBLIC_CHAIN_META["robinhood"][network]
+    if chain["chainId"] != expected_id or endpoint not in chain["rpc"]:
+        raise RuntimeError("Expected endpoint is absent from packaged chain metadata")
+    print(network, expected_id, endpoint)
+```
+
+This reads installed metadata and prints two endpoints; it sends no HTTP or RPC requests and creates no wallet or account. A packaged URL is not a live availability check. Before making calls, check the selected endpoint's current `public` policy in the [live chain directory](https://api.blockvectra.com/v1/chains), including required methods and history limits. The existing `python3 examples/public_chain.py 4663` or `46630` command above selects from that directory and checks chain identity. It does not validate every method or establish archive coverage.
+
 Beyond the keyless read, the full example covers:
 1. **Wallet identity**: Reads an Ethereum EOA private key from `AGENT_PRIVATE_KEY` or from a local `.agent-wallet.json` file. If neither is configured, generates a new wallet locally and saves it to `.agent-wallet.json` (permission `0600`) so subsequent runs reuse the same identity instead of creating new accounts.
 2. **Programmatic account sign-up**: Authenticates via Sign-In with Ethereum (SIWE / EIP-191) against `https://console-api.blockvectra.com/v1` in programmatic mode (omitting the `Origin` header). First-time wallet sign-in automatically provisions an account.
