@@ -388,6 +388,15 @@ uv run examples/mcp_docs.py --query "Robinhood 主网 RPC" --lang zh
 LANGSMITH_TRACING=false uv run examples/langchain_docs.py
 ```
 
+不克隆仓库也可以试用同一示例，运行以下固定发布版本（需要 Python 3.11+ 和 uv）：
+
+```bash
+LANGSMITH_TRACING=false uv run --script --python 3.11 \
+  https://raw.githubusercontent.com/blockvectra/agent-quickstart/f6199662a459abebccba5c3451d80bf5e9a199e4/examples/langchain_docs.py
+```
+
+[uv 会下载脚本并管理依赖](https://docs.astral.sh/uv/reference/cli/#uv-run)。URL 中的提交号固定示例源码版本，不代表所有传递依赖均已锁定。
+
 脚本在内联元数据中声明 `langchain[mcp]==1.4.9`、`fastmcp==4.1.6`、`mcp==2.3.0`，uv 会管理独立于项目依赖的环境。示例采用当前仍为 **beta** 的 `langchain.mcp.MCPAdapter`，不安装已弃用的 adapters 包。迁移说明见 [LangChain 官方指南](https://docs.langchain.com/oss/python/migrate/langchain-mcp-adapters)。
 
 它先确认仅暴露 `search_docs` 和 `read_doc`，检索英文 `quickstart`，再通过 LangChain 工具读取该页。JSON 输出包含协议版本、工具名和两次工具消息及文档正文。无需 LLM、模型 API key、BlockVectra key 或钱包，不调用链上 RPC；上述命令关闭 LangSmith tracing。操作超时为15秒，协作式总超时为60秒，安装依赖不计入这些时限。既有调用逻辑已用所固定版本核验，不代表模型驱动的完整 Agent 工作流已经验证。
