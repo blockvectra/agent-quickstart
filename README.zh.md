@@ -82,6 +82,25 @@ python3 examples/public_chain.py 56  # 从实时目录选择链
 
 脚本最多串行发送两次 HTTP 请求：先从公开目录选择链，再核对 `eth_chainId` 是否与所选链一致。它验证的是链身份，不读取最新区块，也不验证方法覆盖情况。失败时不会自动重试。每次 socket 操作的超时为 15 秒；这不是 DNS 或整个请求流程的硬截止时间。
 
+### 通过 evmchains 发现公开端点
+
+如果 Python 项目已经使用 [ApeWorX evmchains](https://github.com/ApeWorX/evmchains)，其已发布的 [0.1.10 包](https://pypi.org/project/evmchains/0.1.10/)已经列出 BlockVectra 的 Robinhood 主网和测试网公开 RPC。可以直接从它导出的元数据选择，无需另加 provider 适配器。在项目现有环境中使用 `evmchains==0.1.10`，即可复现以下元数据检查：
+
+```python
+from evmchains import PUBLIC_CHAIN_META
+
+for network, expected_id, endpoint in (
+    ("mainnet", 4663, "https://api.blockvectra.com/v1/robinhood_mainnet/public"),
+    ("testnet", 46630, "https://api.blockvectra.com/v1/robinhood_testnet/public"),
+):
+    chain = PUBLIC_CHAIN_META["robinhood"][network]
+    if chain["chainId"] != expected_id or endpoint not in chain["rpc"]:
+        raise RuntimeError("Expected endpoint is absent from packaged chain metadata")
+    print(network, expected_id, endpoint)
+```
+
+此代码只读取已安装的元数据并打印两个端点，不发送 HTTP 或 RPC 请求，也不创建钱包或账户。包内有 URL 不代表端点当前可用。调用前，请检查[实时链目录](https://api.blockvectra.com/v1/chains)中所选端点当前的 `public` 策略，包括所需方法和历史窗口。上面的 `python3 examples/public_chain.py 4663` 或 `46630` 会从实时目录选择端点并检查链身份，不验证所有方法或完整历史覆盖。
+
 除无 Key 读取外，完整示例还涵盖：
 1. **钱包身份**：从环境变量 `AGENT_PRIVATE_KEY` 或本地 `.agent-wallet.json` 文件读取以太坊 EOA 私钥；若均未配置，则在本地生成新钱包并保存至 `.agent-wallet.json`（权限 `0600`），以便后续运行复用相同身份，避免重复开户。
 2. **程序化开户与登录**：通过以太坊签名（SIWE / EIP-191）调用 `https://console-api.blockvectra.com/v1` 进行鉴权（程序化模式，不带 `Origin` 请求头）。新钱包首次登录自动完成开户。
