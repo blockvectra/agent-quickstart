@@ -409,6 +409,20 @@ The script declares `langchain[mcp]==1.4.9`, `fastmcp==4.1.6` and `mcp==2.3.0` i
 
 It verifies that only `search_docs` and `read_doc` are exposed, searches for English `quickstart`, then reads that page through LangChain tools. JSON output contains the protocol version, tool names and both tool messages with the document text. No LLM, model API key, BlockVectra key, wallet or chain RPC is needed. The command disables LangSmith tracing. Operation timeouts are 15 seconds, with a 60-second cooperative overall timeout; dependency installation happens before those timeouts. The existing call logic was checked with the pinned versions; this does not verify a model-driven agent workflow.
 
+### Read documentation with Google ADK
+
+Use Python 3.11+ and [uv](https://docs.astral.sh/uv/) from this checkout:
+
+```bash
+uv run examples/adk_docs.py
+```
+
+The [example](examples/adk_docs.py) pins `google-adk[mcp]==2.14.0` and `mcp==2.3.0`. It connects `McpToolset` to the remote `/mcp/docs` endpoint, checks for exactly `search_docs` and `read_doc`, searches for `quickstart`, then reads that English page and prints its Markdown in JSON. It needs no BlockVectra account, wallet, API key, Google Cloud project or model API key; the in-memory ADK context runs no model.
+
+The two-tool scope is enforced by the server. Keep this toolset open while using its tools, then call `await toolset.close()` in `finally`. For a model-backed agent, add this same toolset to your ADK agent's `tools` and configure your model provider separately. See the [official ADK MCP guide](https://adk.dev/tools-custom/mcp-tools/).
+
+The example sets 15-second HTTP/read timeouts and a 60-second overall timeout, follows no HTTP redirects, and adds no retry loop. ADK retains its own session-recovery behavior. A failed search, tool error, empty document or unexpected tool list stops the example. This reads documentation only; it does not execute the RPC or account steps described in the page.
+
 ### 1. Claude Code Configuration
 
 #### Keyless Documentation MCP
