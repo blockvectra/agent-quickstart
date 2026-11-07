@@ -108,6 +108,20 @@ for network, expected_id, endpoint in (
 4. **JSON-RPC 调用**：从 `GET https://api.blockvectra.com/v1/chains` 获取当前链目录及策略，精确选择唯一且数字链 ID 为 `4663` 的 `robinhood_mainnet`，先验证该端点的 `eth_chainId`，再使用 API Key 调用 `eth_blockNumber`。
 5. **Data API 查询**：根据 OpenAPI 规范调用只读的数据新鲜度接口（`GET /v1/data/{chain}/status/freshness`）。
 
+## 核对已保存的 BSC 收据与日志
+
+想核对一个具体事件，可以从[固定版本的 BSC 收据／日志样例](https://gist.github.com/gjwang/5a8f80f5e441a5701e2e01ae73f187bf/0f680ce849c78375537fce5ed1ce9e447fe2f341)开始。下载页面中的 ZIP、解压后，用 Node.js 22+ 运行：
+
+```sh
+node verify-sample.mjs observed-sample.json
+```
+
+无需安装 npm 依赖、注册或 key。下载完成后，核验过程不联网。预期输出：`PASS 1 receipt event matched among 4 returned logs`。
+
+原观测时间是 **2026-10-25 13:26:17–13:26:21 UTC**，BSC 主网（`56`），区块 `129476271`。核验器按八个字段比较一个收据事件与固定区块日志，只证明这份存档内部一致，不证明当前可用性、独立 canonical 性或完整历史。
+
+同一压缩包还包含 `bsc-compare-provider.mjs`，可选用自己的 BSC 端点进行对比。请按其说明私密配置环境变量；最多串行发送三次 RPC 请求，无重试或广播，可能消耗供应商额度。这些诊断请求带 `BlockVectraQA/1`，与客户流量分开统计。对比客户端使用合成传输测试，与原始保存的真实响应分列。
+
 ## 只接受 URL 的客户端：AgentOS
 
 BlockVectra 已支持 [JSON-RPC URL 路径带 key 鉴权](https://docs.blockvectra.com/en/guides/robinhood-chain/#network-information-and-endpoints)。AgentOS 无需修改 header 鉴权代码或运行本地代理。请先通过私密方式为 AgentOS 进程环境提供 `BLOCKVECTRA_API_KEY`，再设置：
