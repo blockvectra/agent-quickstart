@@ -409,6 +409,20 @@ LANGSMITH_TRACING=false uv run --script --python 3.11 \
 
 它先确认仅暴露 `search_docs` 和 `read_doc`，检索英文 `quickstart`，再通过 LangChain 工具读取该页。JSON 输出包含协议版本、工具名和两次工具消息及文档正文。无需 LLM、模型 API key、BlockVectra key 或钱包，不调用链上 RPC；上述命令关闭 LangSmith tracing。操作超时为15秒，协作式总超时为60秒，安装依赖不计入这些时限。既有调用逻辑已用所固定版本核验，不代表模型驱动的完整 Agent 工作流已经验证。
 
+### 用 Google ADK 读取文档
+
+准备 Python 3.11+ 和 [uv](https://docs.astral.sh/uv/)，在本仓库目录运行：
+
+```bash
+uv run examples/adk_docs.py
+```
+
+[示例](examples/adk_docs.py)固定 `google-adk[mcp]==2.14.0` 与 `mcp==2.3.0`，通过 `McpToolset` 连接远程 `/mcp/docs`，核对只有 `search_docs`、`read_doc`，搜索 `quickstart` 后读取英文页面，将 Markdown 放在 JSON 中输出。无需 BlockVectra 账户、钱包、API Key、Google Cloud 项目或模型 API Key；内存中的 ADK 上下文不运行模型。
+
+双工具范围由服务端执行。使用工具期间保持 toolset 打开，并在 `finally` 中调用 `await toolset.close()`。需要模型参与时，将同一 toolset 放入 ADK agent 的 `tools`，另外配置模型提供方。参见 [ADK 官方 MCP 指南](https://adk.dev/tools-custom/mcp-tools/)。
+
+示例设有 15 秒 HTTP／读取超时和 60 秒整体超时，不跟随 HTTP 重定向、不另加重试循环；ADK 自身的会话恢复行为保留。搜索失败、工具错误、空文档或工具清单不符都会停止。这里只读文档，不会执行页面中介绍的 RPC 或开户步骤。
+
 ### 1. Claude Code 配置
 
 #### 免 Key 文档服务
