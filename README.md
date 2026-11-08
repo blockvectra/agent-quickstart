@@ -427,6 +427,20 @@ The two-tool scope is enforced by the server. Keep this toolset open while using
 
 The example sets 15-second HTTP/read timeouts and a 60-second overall timeout, follows no HTTP redirects, and adds no retry loop. ADK retains its own session-recovery behavior. A failed search, tool error, empty document or unexpected tool list stops the example. This reads documentation only; it does not execute the RPC or account steps described in the page.
 
+### Read documentation with Pydantic AI
+
+Use Python 3.11+ and [uv](https://docs.astral.sh/uv/) from this checkout:
+
+```bash
+uv run examples/pydantic_docs.py
+```
+
+The [example](examples/pydantic_docs.py) pins `pydantic-ai-slim[mcp]==2.66.0`, `fastmcp==4.1.6` and `mcp==2.3.0`. It uses Pydantic AI's `MCPToolset` to discover the two documentation tools, search for `quickstart`, and read that English page. JSON output includes the Markdown. No model, model API key, BlockVectra account, wallet or API key is needed.
+
+The `async with toolset` block keeps the connection open for both calls and closes it on success or failure. Tool errors, an unexpected tool list, a missing search match or empty document stop the example. HTTP and tool timeouts are 15 seconds, with a 60-second cooperative overall timeout; dependency installation happens before these timeouts. The HTTP client follows no redirects and the example adds no retry loop. It reads documentation without executing the RPC or account instructions in the page.
+
+For a model-backed agent, configure your model separately and reuse the toolset in the agent's `toolsets`. Pydantic AI recommends its higher-level `MCP` capability for ordinary agent runs; this example uses `MCPToolset` directly so its connection and two calls are explicit. See the [official client guide](https://github.com/pydantic/pydantic-ai/blob/v2.66.0/docs/mcp/client.md). This example does not test a model-driven agent workflow.
+
 ### 1. Claude Code Configuration
 
 #### Keyless Documentation MCP
