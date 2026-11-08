@@ -427,6 +427,20 @@ uv run examples/adk_docs.py
 
 示例设有 15 秒 HTTP／读取超时和 60 秒整体超时，不跟随 HTTP 重定向、不另加重试循环；ADK 自身的会话恢复行为保留。搜索失败、工具错误、空文档或工具清单不符都会停止。这里只读文档，不会执行页面中介绍的 RPC 或开户步骤。
 
+### 用 Pydantic AI 读取文档
+
+准备 Python 3.11+ 和 [uv](https://docs.astral.sh/uv/)，在本仓库目录运行：
+
+```bash
+uv run examples/pydantic_docs.py
+```
+
+[示例](examples/pydantic_docs.py)固定 `pydantic-ai-slim[mcp]==2.66.0`、`fastmcp==4.1.6` 与 `mcp==2.3.0`，使用 Pydantic AI 的 `MCPToolset` 发现两个文档工具，搜索 `quickstart` 后读取英文页面，将 Markdown 放在 JSON 中输出。无需模型、模型 API key、BlockVectra 账户、钱包或 API Key。
+
+`async with toolset` 在两次调用期间保持连接，成功或失败都会退出并释放连接。工具报错、工具清单不符、搜索未命中或文档为空时停止。HTTP 与工具超时为15秒，协作式整体超时为60秒；安装依赖不计入这些时限。HTTP 客户端不跟随重定向，示例不另加重试循环。这里只读文档，不执行页面中的 RPC 或开户步骤。
+
+需要模型参与时，另行配置模型，将同一 toolset 放入 agent 的 `toolsets`。Pydantic AI 对普通 agent 运行推荐更高层的 `MCP` capability；此例直接使用 `MCPToolset`，让连接和两次调用清晰可见。参见[官方客户端指南](https://github.com/pydantic/pydantic-ai/blob/v2.66.0/docs/mcp/client.md)。此例未验证模型驱动的 Agent 工作流。
+
 ### 1. Claude Code 配置
 
 #### 免 Key 文档服务
