@@ -455,6 +455,22 @@ The `async with server` block keeps the connection open for both calls and close
 
 This calls the SDK-managed MCP server directly; it does not run an `Agent` or `Runner`. For a model-backed agent, configure your model separately and pass the same server in the agent's `mcp_servers`. See the [official OpenAI Agents SDK guide](https://developers.openai.com/api/docs/guides/agents/integrations-observability). This example does not test a model-driven agent workflow.
 
+### Read documentation with mcp-use (Node.js)
+
+Use the standalone [mcp-use example](examples/mcp-use-docs/remote-docs.ts) with Node.js 22.22.2+:
+
+```bash
+cd examples/mcp-use-docs
+npm ci --ignore-scripts
+npm start
+```
+
+It connects to the docs-only MCP endpoint, lists the tools, searches for `quickstart` in English and prints the page returned by the search. No local server, model, account or API key is needed. The client closes on success or failure; tool errors and empty results stop the script. Calls have 15-second timeouts. Dependency installation needs network access and happens before the script starts.
+
+SDK anonymous telemetry is disabled before the client module loads.
+
+The example pins `@mcp-use/client` to 2.4.5 and commits its dependency lockfile. Internal QA runs set `BLOCKVECTRA_INTERNAL_QA=1`; ordinary runs leave it unset. Reading the document does not execute its RPC or account instructions.
+
 ### 1. Claude Code Configuration
 
 #### Keyless Documentation MCP

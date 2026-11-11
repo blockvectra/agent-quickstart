@@ -1,0 +1,95 @@
+/**
+ * Search and read BlockVectra documentation with @mcp-use/client.
+ * Node.js 22.22.2+; from this directory: npm ci --ignore-scripts && npm start.
+ * No local server, model, account or API key is needed.
+ */
+
+export {};
+
+// Disable SDK telemetry before the module initializes.
+process.env.MCP_USE_ANONYMIZED_TELEMETRY = "false";
+const { MCPClient } = await import("@mcp-use/client");
+
+const TIMEOUT = 15000;
+const LANG = "en";
+// Internal QA runs set BLOCKVECTRA_INTERNAL_QA=1 so traffic can be told apart.
+const USER_AGENT =
+  "mcp-use-remote-docs-example/1" +
+  (process.env.BLOCKVECTRA_INTERNAL_QA === "1" ? " BlockVectraQA/1" : "");
+
+function textOf(
+  result: { isError?: boolean; content: unknown[] },
+  label: string
+): string {
+  if (result.isError) throw new Error(`${label} returned an error result`);
+  for (const block of result.content) {
+    if (typeof block !== "object" || block === null) continue;
+    if ("type" in block && block.type === "text" && "text" in block) {
+      if (typeof block.text === "string" && block.text.trim()) {
+        return block.text;
+      }
+    }
+  }
+  throw new Error(`${label} returned no text content`);
+}
+
+function firstResultPath(payload: unknown): string {
+  if (typeof payload === "object" && payload !== null && "results" in payload) {
+    const { results } = payload;
+    if (Array.isArray(results) && results.length > 0) {
+      const first: unknown = results[0];
+      if (typeof first === "object" && first !== null && "path" in first) {
+        if (typeof first.path === "string" && first.path !== "") {
+          return first.path;
+        }
+      }
+    }
+  }
+  throw new Error("search_docs returned no usable results; stopping");
+}
+
+async function main(): Promise<void> {
+  const client = new MCPClient({
+    mcpServers: {
+      docs: {
+        url: "https://docs.blockvectra.com/mcp/docs",
+        oauth: false,
+        detectMixedAuth: false,
+        timeout: TIMEOUT,
+        headers: {
+          "User-Agent": USER_AGENT,
+        },
+      },
+    },
+  });
+
+  try {
+    const connection = await client.connect("docs");
+
+    const tools = await connection.listTools({ timeout: TIMEOUT });
+    console.log("tools:", tools.map((t) => t.name).join(", "));
+
+    const search = await connection.callTool(
+      "search_docs",
+      { query: "quickstart", lang: LANG, limit: 1 },
+      { timeout: TIMEOUT }
+    );
+    const payload: unknown = JSON.parse(textOf(search, "search_docs"));
+    const path = firstResultPath(payload);
+    console.log("first result:", path);
+
+    const doc = await connection.callTool(
+      "read_doc",
+      { path, lang: LANG },
+      { timeout: TIMEOUT }
+    );
+    console.log(textOf(doc, "read_doc"));
+  } finally {
+    await client.close();
+  }
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});

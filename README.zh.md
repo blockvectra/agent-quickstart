@@ -455,6 +455,22 @@ uv run examples/openai_agents_docs.py
 
 此例直接调用由 SDK 管理的 MCP server，不运行 `Agent` 或 `Runner`。需要模型参与时，另行配置模型，并把同一个 server 放入 agent 的 `mcp_servers`。参见 [OpenAI Agents SDK 官方指南](https://developers.openai.com/api/docs/guides/agents/integrations-observability)。此例未验证模型驱动的 Agent 工作流。
 
+### 使用 mcp-use 读取文档（Node.js）
+
+使用独立的 [mcp-use 示例](examples/mcp-use-docs/remote-docs.ts)，需要 Node.js 22.22.2+：
+
+```bash
+cd examples/mcp-use-docs
+npm ci --ignore-scripts
+npm start
+```
+
+示例连接仅文档 MCP 入口，列出工具，用英语搜索 `quickstart`，然后打印搜索返回的页面。无需本地服务、模型、账号或 API key。成功或失败都会关闭客户端；工具报错或结果为空时停止。每次调用超时为 15 秒。安装依赖需要联网，在脚本启动前完成。
+
+示例在加载客户端模块前关闭 SDK 匿名遥测。
+
+示例固定 `@mcp-use/client` 2.4.5，并提交依赖锁文件。内部 QA 设置 `BLOCKVECTRA_INTERNAL_QA=1`，正常使用时不设置。读取文档不会执行文中的 RPC 或账号操作。
+
 ### 1. Claude Code 配置
 
 #### 免 Key 文档服务

@@ -10,6 +10,7 @@ Choose the entry that matches the requested task before installing dependencies 
 | Read documentation through Google ADK tools | [ADK MCP example](examples/adk_docs.py) and the README section “Read documentation with Google ADK”; Python 3.11+, uv, no model, Cloud project or account key. |
 | Read documentation through Pydantic AI tools | [Pydantic AI MCP example](examples/pydantic_docs.py) and the README section “Read documentation with Pydantic AI”; Python 3.11+, uv, no model or account key. |
 | Read documentation through the OpenAI Agents SDK | [OpenAI Agents SDK MCP example](examples/openai_agents_docs.py) and the README section “Read documentation with the OpenAI Agents SDK”; Python 3.12+, uv, no model or account key. |
+| Read documentation with mcp-use from Node.js | [Standalone mcp-use example](examples/mcp-use-docs/remote-docs.ts) and the README section “Read documentation with mcp-use (Node.js)”; Node.js 22.22.2+, no model or account key. |
 | Check a chain's identity with Python | [Standard-library public reader](examples/public_chain.py) and the README section “Python standard-library entry”. |
 | Check chain identity and read the latest block number | [Public TypeScript reader](src/public-read-cli.ts) and the README section “Start with a keyless read”. |
 | Inspect a saved BSC receipt and fixed-block logs offline | [Pinned BSC event sample](https://gist.github.com/gjwang/5a8f80f5e441a5701e2e01ae73f187bf/0f680ce849c78375537fce5ed1ce9e447fe2f341) and the README section “Check a saved BSC receipt and its logs”; Node.js 22+, no account or key. |
