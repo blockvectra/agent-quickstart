@@ -441,6 +441,20 @@ uv run examples/pydantic_docs.py
 
 需要模型参与时，另行配置模型，将同一 toolset 放入 agent 的 `toolsets`。Pydantic AI 对普通 agent 运行推荐更高层的 `MCP` capability；此例直接使用 `MCPToolset`，让连接和两次调用清晰可见。参见[官方客户端指南](https://github.com/pydantic/pydantic-ai/blob/v2.66.0/docs/mcp/client.md)。此例未验证模型驱动的 Agent 工作流。
 
+### 用 OpenAI Agents SDK 读取文档
+
+使用 Python 3.12+，并在本仓库目录中运行 [uv](https://docs.astral.sh/uv/)：
+
+```bash
+uv run examples/openai_agents_docs.py
+```
+
+[示例](examples/openai_agents_docs.py)固定 `openai-agents==0.24.0` 与 `mcp==2.3.0`，使用 SDK 的 `MCPServerStreamableHttp` 发现两个文档工具，搜索 `quickstart` 后读取英文页面，将 Markdown 放在 JSON 中输出。无需模型、模型 API key、BlockVectra 账户、钱包或 API Key，且已关闭 tracing。
+
+`async with server` 在两次调用期间保持连接，成功或失败都会关闭。工具错误、工具列表不符、搜索无结果或文档为空都会让示例停止。HTTP 与会话超时均为 15 秒，整体协作式超时 60 秒；依赖安装发生在这些超时之前。HTTP 客户端不跟随重定向，示例也不加重试循环。它只读取文档，不执行页面中的 RPC 或账户步骤。
+
+此例直接调用由 SDK 管理的 MCP server，不运行 `Agent` 或 `Runner`。需要模型参与时，另行配置模型，并把同一个 server 放入 agent 的 `mcp_servers`。参见 [OpenAI Agents SDK 官方指南](https://developers.openai.com/api/docs/guides/agents/integrations-observability)。此例未验证模型驱动的 Agent 工作流。
+
 ### 1. Claude Code 配置
 
 #### 免 Key 文档服务
