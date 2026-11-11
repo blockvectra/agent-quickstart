@@ -4,6 +4,18 @@
 
 克隆仓库后，Agent 可先读 [AGENTS.md](AGENTS.md)，按任务选择文档查询、公开读取或账户示例。
 
+## 按任务选择入口
+
+| 任务 | 从这里开始 |
+| --- | --- |
+| 查询接入文档 | [文档 Skill](#用-agent-skill-查询文档) 或 [Python MCP 客户端](#从-python-agent-读取文档) |
+| 在现有框架中读取文档 | [LangChain](#通过-langchain-读取同一页面) · [Google ADK](#用-google-adk-读取文档) · [Pydantic AI](#用-pydantic-ai-读取文档) · [OpenAI Agents SDK](#用-openai-agents-sdk-读取文档) · [mcp-use / Node.js](#使用-mcp-use-读取文档nodejs) |
+| 核对 chain ID | [不克隆仓库的 Python 入口](#不克隆仓库先校验链身份) 或 [本地 Python](#python-标准库入口) |
+| 核对 chain ID 并读取区块号 | [TypeScript 公开读取](#先做无-key-读取) |
+| 创建或复用账户和 Key，再调用 Data API | [完整接入配置](#安装与配置) 与 [运行说明](#运行示例) |
+
+文档查询和公开读取示例不需要 BlockVectra 账户或 Key。`npm start` 运行完整接入流程，可能创建钱包、账户与 API Key。各入口下方列有环境要求和请求限制。
+
 ## 不克隆仓库，先校验链身份
 
 已安装 [uv](https://docs.astral.sh/uv/) 时，可以不克隆仓库，直接运行固定源码版本的脚本。以下命令选择 Mode 主网：

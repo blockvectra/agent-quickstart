@@ -4,6 +4,18 @@ TypeScript and Python examples for AI agents and automated scripts. Start with a
 
 Agents working from a clone can start with [AGENTS.md](AGENTS.md) to choose documentation, public-read or account examples.
 
+## Choose your first task
+
+| Task | Start here |
+| --- | --- |
+| Ask a setup question | [Documentation skill](#ask-a-documentation-question-with-an-agent-skill) or [Python MCP client](#read-documentation-from-a-python-agent) |
+| Read documentation from your framework | [LangChain](#read-the-same-page-with-langchain) · [Google ADK](#read-documentation-with-google-adk) · [Pydantic AI](#read-documentation-with-pydantic-ai) · [OpenAI Agents SDK](#read-documentation-with-the-openai-agents-sdk) · [mcp-use / Node.js](#read-documentation-with-mcp-use-nodejs) |
+| Check a chain ID | [Python without cloning](#check-a-chain-without-cloning) or [local Python](#python-standard-library-entry) |
+| Check chain ID and read a block number | [TypeScript public reader](#start-with-a-keyless-read) |
+| Create or reuse an account/key, then call Data API | [Full onboarding setup](#installation--setup) and [run instructions](#running-the-quickstart) |
+
+Documentation and public-read examples need no BlockVectra account or key. `npm start` runs the full onboarding flow and can create a wallet, account and API key. Each entry below lists its prerequisites and request limits.
+
 ## Check a chain without cloning
 
 With [uv](https://docs.astral.sh/uv/) installed, you can run the pinned script without cloning. This command selects Mode mainnet:
