@@ -441,6 +441,20 @@ The `async with toolset` block keeps the connection open for both calls and clos
 
 For a model-backed agent, configure your model separately and reuse the toolset in the agent's `toolsets`. Pydantic AI recommends its higher-level `MCP` capability for ordinary agent runs; this example uses `MCPToolset` directly so its connection and two calls are explicit. See the [official client guide](https://github.com/pydantic/pydantic-ai/blob/v2.66.0/docs/mcp/client.md). This example does not test a model-driven agent workflow.
 
+### Read documentation with the OpenAI Agents SDK
+
+Use Python 3.12+ and [uv](https://docs.astral.sh/uv/) from this checkout:
+
+```bash
+uv run examples/openai_agents_docs.py
+```
+
+The [example](examples/openai_agents_docs.py) pins `openai-agents==0.24.0` and `mcp==2.3.0`. It uses the SDK's `MCPServerStreamableHttp` to discover the two documentation tools, search for `quickstart`, and read that English page. JSON output includes the Markdown. No model, model API key, BlockVectra account, wallet or API key is needed, and tracing is disabled.
+
+The `async with server` block keeps the connection open for both calls and closes it on success or failure. Tool errors, an unexpected tool list, an empty search or an empty document stop the example. HTTP and session timeouts are 15 seconds, with a 60-second cooperative overall timeout; dependency installation happens before these timeouts. The HTTP client follows no redirects and the example adds no retry loop. It reads documentation without executing the RPC or account instructions in the page.
+
+This calls the SDK-managed MCP server directly; it does not run an `Agent` or `Runner`. For a model-backed agent, configure your model separately and pass the same server in the agent's `mcp_servers`. See the [official OpenAI Agents SDK guide](https://developers.openai.com/api/docs/guides/agents/integrations-observability). This example does not test a model-driven agent workflow.
+
 ### 1. Claude Code Configuration
 
 #### Keyless Documentation MCP
