@@ -4,7 +4,11 @@
  * No local server, model, account or API key is needed.
  */
 
-import { MCPClient } from "@mcp-use/client";
+export {};
+
+// Disable SDK telemetry before the module initializes.
+process.env.MCP_USE_ANONYMIZED_TELEMETRY = "false";
+const { MCPClient } = await import("@mcp-use/client");
 
 const TIMEOUT = 15000;
 const LANG = "en";
